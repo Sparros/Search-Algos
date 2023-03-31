@@ -1,10 +1,18 @@
 import pygame
 import math
 from queue import PriorityQueue
+import random
 
-WIDTH = 800
-WIN = pygame.display.set_mode((WIDTH, WIDTH))
-pygame.display.set_caption("A* Path Finding Algorithm")
+# Initialize pygame
+pygame.init()
+
+# Set up the window and left-hand menu sizes
+GRID_WIDTH = 800
+MENU_WIDTH = 200
+WINDOW_HEIGHT = 800
+MENU_HEIGHT = WINDOW_HEIGHT
+FONT_SIZE = 24
+#rows = 50
 
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -16,6 +24,32 @@ PURPLE = (128, 0, 128)
 ORANGE = (255, 165 ,0)
 GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
+
+# Set up the window and left-hand menu surfaces
+WINDOW = pygame.display.set_mode((GRID_WIDTH + MENU_WIDTH, WINDOW_HEIGHT))
+GRID = pygame.Surface((GRID_WIDTH, WINDOW_HEIGHT))
+MENU = pygame.Surface((MENU_WIDTH, MENU_HEIGHT))
+MENU.fill((128, 128, 128))
+pygame.display.set_caption("grid")
+
+# Define the menu items and their positions
+menu_items = [
+	("Algorithm:", (10, 50)),
+	("A*", (10, 100)),
+	("Dijkstra", (10, 150)),
+	("BFS", (10, 200)),
+	("DFS", (10, 250))
+]
+
+# Set up the font for the menu items
+font = pygame.font.Font(None, FONT_SIZE)
+
+# Draw the menu items on the left-hand menu surface
+for item in menu_items:
+	text = font.render(item[0], True, WHITE)
+	rect = text.get_rect()
+	rect.topleft = item[1]
+	MENU.blit(text, rect)
 
 class Spot:
 	def __init__(self, row, col, width, total_rows):
@@ -68,7 +102,7 @@ class Spot:
 		self.color = PURPLE
 
 	def draw(self, win):
-		pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
+		pygame.draw.rect(GRID, self.color, (self.x, self.y, self.width, self.width))
 
 	def update_neighbors(self, grid):
 		self.neighbors = []
@@ -86,20 +120,6 @@ class Spot:
 
 	def __lt__(self, other):
 		return False
-
-
-def h(p1, p2):
-	x1, y1 = p1
-	x2, y2 = p2
-	return abs(x1 - x2) + abs(y1 - y2)
-
-
-def reconstruct_path(came_from, current, draw):
-	while current in came_from:
-		current = came_from[current]
-		current.make_path()
-		draw()
-
 
 def algorithm(draw, grid, start, end):
 	count = 0
@@ -146,27 +166,53 @@ def algorithm(draw, grid, start, end):
 
 	return False
 
+def h(p1, p2):
+	x1, y1 = p1
+	x2, y2 = p2
+	return abs(x1 - x2) + abs(y1 - y2)
 
-def make_grid(rows, width):
+def reconstruct_path(came_from, current, draw):
+	while current in came_from:
+		current = came_from[current]
+		current.make_path()
+		draw()
+
+# Create a 2D list of Spot objects
+def make_grid(rows, GRID_WIDTH):
 	grid = []
-	gap = width // rows
+	gap = GRID_WIDTH // rows
 	for i in range(rows):
 		grid.append([])
 		for j in range(rows):
 			spot = Spot(i, j, gap, rows)
 			grid[i].append(spot)
 
-	return grid
+	# Add some randomly generated barriers
+	for i in range(rows*2):
+		row = random.randint(0, rows-1)
+		col = random.randint(0, rows-1)
+		spot = grid[row][col]
+		spot.make_barrier()
 
+	# Choose a random start and end point
+	start = grid[random.randint(0, rows-1)][random.randint(0, rows-1)]
+	end = grid[random.randint(0, rows-1)][random.randint(0, rows-1)]
+	while end == start:
+		end = grid[random.randint(0, rows-1)][random.randint(0, rows-1)]
 
+	start.make_start()
+	end.make_end()
+
+	return grid, start, end
+
+# Draw the grid on the screen
 def draw_grid(win, rows, width):
 	gap = width // rows
 	for i in range(rows):
 		pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
 		for j in range(rows):
 			pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
-
-
+		
 def draw(win, grid, rows, width):
 	win.fill(WHITE)
 
@@ -177,70 +223,37 @@ def draw(win, grid, rows, width):
 	draw_grid(win, rows, width)
 	pygame.display.update()
 
-
-def get_clicked_pos(pos, rows, width):
-	gap = width // rows
-	y, x = pos
-
-	row = y // gap
-	col = x // gap
-
-	return row, col
-
-
-def main(win, width):
-	ROWS = 50
-	grid = make_grid(ROWS, width)
-
-	start = None
-	end = None
-
-	run = True
-	while run:
-		draw(win, grid, ROWS, width)
+def main(win, width, rows):
+	grid, start, end = make_grid(WINDOW_HEIGHT, GRID_WIDTH)
+	running = True
+	print(start, end)
+	# Main loop
+	while running:
+		# Handle events
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				run = False
+				running = False
 
-			if pygame.mouse.get_pressed()[0]: # LEFT
-				pos = pygame.mouse.get_pos()
-				row, col = get_clicked_pos(pos, ROWS, width)
-				spot = grid[row][col]
-				if not start and spot != end:
-					start = spot
-					start.make_start()
-
-				elif not end and spot != start:
-					end = spot
-					end.make_end()
-
-				elif spot != end and spot != start:
-					spot.make_barrier()
-
-			elif pygame.mouse.get_pressed()[2]: # RIGHT
-				pos = pygame.mouse.get_pos()
-				row, col = get_clicked_pos(pos, ROWS, width)
-				spot = grid[row][col]
-				spot.reset()
-				if spot == start:
-					start = None
-				elif spot == end:
-					end = None
-
+		# Draw the game grid
+		for row in grid:
+			for spot in row:
+				spot.draw(win)
+			
 			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_SPACE and start and end:
-					print(start, end)
+				if event.key == pygame.K_SPACE:
 					for row in grid:
 						for spot in row:
 							spot.update_neighbors(grid)
 
-					algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+					algorithm(lambda: draw(win, grid, rows, width), grid, start, end)
+		
+		# Blit the left-hand menu onto the game window surface
+		WINDOW.blit(MENU, (0, 0))
+	
+		# Update the display
+		pygame.display.update()
 
-				if event.key == pygame.K_c:
-					start = None
-					end = None
-					grid = make_grid(ROWS, width)
-
+	# Quit pygame
 	pygame.quit()
 
-main(WIN, WIDTH)
+main(WINDOW_HEIGHT, GRID_WIDTH, WINDOW_HEIGHT)
