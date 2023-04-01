@@ -2,17 +2,20 @@ import pygame
 import math
 from queue import PriorityQueue
 import random
+import pygame_gui
 
 # Initialize pygame
 pygame.init()
 
-# Set up the window and left-hand menu sizes
-GRID_WIDTH = 800
-MENU_WIDTH = 200
-WINDOW_HEIGHT = 800
-MENU_HEIGHT = WINDOW_HEIGHT
+MENU_WIDTH = 250
+WIDTH = 800
+ROWS = 50
 FONT_SIZE = 24
-#rows = 50
+WIN = pygame.display.set_mode((MENU_WIDTH + WIDTH, WIDTH))
+MENU = pygame.Surface((MENU_WIDTH, WIDTH))
+GRID = pygame.Surface((WIDTH, WIDTH))
+pygame.display.set_caption("grid")
+manager = pygame_gui.UIManager((MENU_WIDTH + WIDTH, WIDTH))
 
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -25,31 +28,9 @@ ORANGE = (255, 165 ,0)
 GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
 
-# Set up the window and left-hand menu surfaces
-WINDOW = pygame.display.set_mode((GRID_WIDTH + MENU_WIDTH, WINDOW_HEIGHT))
-GRID = pygame.Surface((GRID_WIDTH, WINDOW_HEIGHT))
-MENU = pygame.Surface((MENU_WIDTH, MENU_HEIGHT))
-MENU.fill((128, 128, 128))
-pygame.display.set_caption("grid")
-
-# Define the menu items and their positions
-menu_items = [
-	("Algorithm:", (10, 50)),
-	("A*", (10, 100)),
-	("Dijkstra", (10, 150)),
-	("BFS", (10, 200)),
-	("DFS", (10, 250))
-]
-
 # Set up the font for the menu items
 font = pygame.font.Font(None, FONT_SIZE)
 
-# Draw the menu items on the left-hand menu surface
-for item in menu_items:
-	text = font.render(item[0], True, WHITE)
-	rect = text.get_rect()
-	rect.topleft = item[1]
-	MENU.blit(text, rect)
 
 class Spot:
 	def __init__(self, row, col, width, total_rows):
@@ -102,7 +83,7 @@ class Spot:
 		self.color = PURPLE
 
 	def draw(self, win):
-		pygame.draw.rect(GRID, self.color, (self.x, self.y, self.width, self.width))
+		pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
 
 	def update_neighbors(self, grid):
 		self.neighbors = []
@@ -178,9 +159,9 @@ def reconstruct_path(came_from, current, draw):
 		draw()
 
 # Create a 2D list of Spot objects
-def make_grid(rows, GRID_WIDTH):
+def make_grid(rows, width):
 	grid = []
-	gap = GRID_WIDTH // rows
+	gap = width // rows
 	for i in range(rows):
 		grid.append([])
 		for j in range(rows):
@@ -206,12 +187,12 @@ def make_grid(rows, GRID_WIDTH):
 	return grid, start, end
 
 # Draw the grid on the screen
-def draw_grid(win, rows, width):
+def draw_grid(grid, rows, width):
 	gap = width // rows
 	for i in range(rows):
-		pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
+		pygame.draw.line(grid, GREY, (0, i * gap), (width, i * gap))
 		for j in range(rows):
-			pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
+			pygame.draw.line(grid, GREY, (j * gap, 0), (j * gap, width))
 		
 def draw(win, grid, rows, width):
 	win.fill(WHITE)
@@ -220,40 +201,47 @@ def draw(win, grid, rows, width):
 		for spot in row:
 			spot.draw(win)
 
-	draw_grid(win, rows, width)
+	draw_grid(GRID, rows, width)
 	pygame.display.update()
 
-def main(win, width, rows):
-	grid, start, end = make_grid(WINDOW_HEIGHT, GRID_WIDTH)
-	running = True
-	print(start, end)
-	# Main loop
-	while running:
-		# Handle events
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				running = False
-
-		# Draw the game grid
-		for row in grid:
-			for spot in row:
-				spot.draw(win)
-			
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_SPACE:
-					for row in grid:
-						for spot in row:
-							spot.update_neighbors(grid)
-
-					algorithm(lambda: draw(win, grid, rows, width), grid, start, end)
-		
-		# Blit the left-hand menu onto the game window surface
-		WINDOW.blit(MENU, (0, 0))
+def draw_menu():
+	MENU.fill((29,34,40,255))
 	
-		# Update the display
-		pygame.display.update()
+	# Draw the menu surface on the main window
+	WIN.blit(MENU, (0, 0))
+	# Update the display to show the menu
+	pygame.display.update()
+
+	
+
+def main(win, width, rows):
+	grid, start, end = make_grid(rows, width)
+	run = True
+	# Main loop
+	while run:
+		# Blit the left-hand menu onto the game window surface
+		draw_menu()
+
+		draw_grid(GRID,ROWS,WIDTH)
+		# Draw the grid
+		# draw(win, grid, ROWS, width)
+		# for event in pygame.event.get():
+		# 	if event.type == pygame.QUIT:
+		# 		run = False
+		# 	if event.type == pygame.KEYDOWN:
+		# 		if event.key == pygame.K_SPACE:
+		# 			print("Space pressed")
+		# 			print(start.get_pos())
+		# 			for row in grid:
+		# 				for spot in row:
+		# 					spot.update_neighbors(grid)
+
+		# 			algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+
+		# Blit the grid surface to the window surface
+		WIN.blit(GRID, (MENU_WIDTH, 0))
 
 	# Quit pygame
 	pygame.quit()
 
-main(WINDOW_HEIGHT, GRID_WIDTH, WINDOW_HEIGHT)
+main(WIN, WIDTH, ROWS)
