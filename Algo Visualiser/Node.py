@@ -13,14 +13,14 @@ TURQUOISE = (64, 224, 208)
 
 
 class Node:
-	def __init__(self, row, col, width, total_rows):
+	def __init__(self, row, col, gap, total_rows):
 		self.row = row
 		self.col = col
-		self.x = row * width
-		self.y = col * width
+		self.x = row * gap
+		self.y = col * gap
 		self.color = WHITE
 		self.neighbors = []
-		self.width = width
+		self.width = gap
 		self.total_rows = total_rows
 
 	def get_pos(self):
@@ -63,7 +63,7 @@ class Node:
 		self.color = PURPLE
 
 	def draw(self, win):
-		pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
+		pygame.draw.rect(win, self.color, pygame.Rect(self.x, self.y, self.width + 1, self.width + 1))
 
 	def update_neighbors(self, grid):
 		self.neighbors = []

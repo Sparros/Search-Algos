@@ -1,7 +1,7 @@
 import pygame
 from queue import PriorityQueue
 
-def algorithm(draw, grid, start, end):
+def A_star(draw, grid, start, end):
 	count = 0
 	open_set = PriorityQueue()
 	open_set.put((0, count, start))
