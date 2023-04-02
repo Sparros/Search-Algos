@@ -2,6 +2,10 @@ import pygame_gui
 import pygame
 from pygame_gui.core import ObjectID
 
+# Custom event IDs
+START_EVENT = pygame.USEREVENT + 1
+NEW_MAZE_EVENT = pygame.USEREVENT + 2
+
 class Menu:
     def __init__(self, width, height):
         self.width = width
@@ -27,7 +31,7 @@ class Menu:
             object_id=ObjectID(class_id='@button', 
                                object_id='#start-button')
         )
-        self.start_button = pygame_gui.elements.UIButton(
+        self.restart_button = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect((button_width + gap + 10, 50), (button_width, button_height)),
             text='Restart',
             manager=self.manager,
@@ -48,7 +52,7 @@ class Menu:
         #                     object_id='#my-table')
         # )
 
-        self.start_button = pygame_gui.elements.UIButton(
+        self.new_maze_button = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect((75, 450), (button_width, button_height)),
             text='New Maze',
             manager=self.manager,
@@ -56,7 +60,7 @@ class Menu:
                                object_id='#new-maze-button')
         )
 
-        self.start_button = pygame_gui.elements.UIButton(
+        self.free_draw_button = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect((75, 450 + vertical_gap + button_height), (button_width, button_height)),
             text='Free Draw',
             manager=self.manager,
@@ -72,9 +76,12 @@ class Menu:
         if event.type == pygame.USEREVENT:
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == self.start_button:
-                    # Start button clicked, do something
-                    print('Start button clicked')
-                # Add more button click handlers here
+                    # Start button clicked                   
+                    pygame.event.post(pygame.event.Event(START_EVENT))
+                elif event.ui_element == self.new_maze_button:
+                    # New Maze button clicked
+                    pygame.event.post(pygame.event.Event(NEW_MAZE_EVENT))
+
 
     def update(self, delta):
         # Update GUI

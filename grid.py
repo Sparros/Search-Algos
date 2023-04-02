@@ -223,20 +223,20 @@ def main(win, width, rows):
 		draw_menu()
 
 		draw_grid(GRID,ROWS,WIDTH)
-		# Draw the grid
-		# draw(win, grid, ROWS, width)
-		# for event in pygame.event.get():
-		# 	if event.type == pygame.QUIT:
-		# 		run = False
-		# 	if event.type == pygame.KEYDOWN:
-		# 		if event.key == pygame.K_SPACE:
-		# 			print("Space pressed")
-		# 			print(start.get_pos())
-		# 			for row in grid:
-		# 				for spot in row:
-		# 					spot.update_neighbors(grid)
 
-		# 			algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+		draw(win, grid, ROWS, width)
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				run = False
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_SPACE:
+					print("Space pressed")
+					print(start.get_pos())
+					for row in grid:
+						for spot in row:
+							spot.update_neighbors(grid)
+
+					algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
 
 		# Blit the grid surface to the window surface
 		WIN.blit(GRID, (MENU_WIDTH, 0))

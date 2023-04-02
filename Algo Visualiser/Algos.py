@@ -1,7 +1,19 @@
 import pygame
 from queue import PriorityQueue
 
+def h(p1, p2):
+	x1, y1 = p1
+	x2, y2 = p2
+	return abs(x1 - x2) + abs(y1 - y2)
+
+def reconstruct_path(came_from, current, draw):
+	while current in came_from:
+		current = came_from[current]
+		current.make_path()
+		draw()
+
 def A_star(draw, grid, start, end):
+	print("A_star function called.")
 	count = 0
 	open_set = PriorityQueue()
 	open_set.put((0, count, start))
@@ -40,19 +52,38 @@ def A_star(draw, grid, start, end):
 					neighbor.make_open()
 
 		draw()
-
+	
 		if current != start:
 			current.make_closed()
 
 	return False
 
-def h(p1, p2):
-	x1, y1 = p1
-	x2, y2 = p2
-	return abs(x1 - x2) + abs(y1 - y2)
+def DFS(draw, grid, start, end, visited=None):
+    if visited is None:
+        visited = set()
 
-def reconstruct_path(came_from, current, draw):
-	while current in came_from:
-		current = came_from[current]
-		current.make_path()
-		draw()
+    if start == end:
+        return True
+
+    row, col = start.get_pos()
+    neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+
+    for neighbor_row, neighbor_col in neighbors:
+        if 0 <= neighbor_row < len(grid) and 0 <= neighbor_col < len(grid[0]):
+            neighbor = grid[neighbor_row][neighbor_col]
+            if neighbor not in visited and not neighbor.is_barrier():
+                visited.add(neighbor)
+                neighbor.make_open()
+                draw()
+
+                if DFS(draw, grid, neighbor, end, visited):
+                    neighbor.make_path()
+                    draw()
+                    return True
+
+                neighbor.make_closed()
+                draw()
+
+    return False
+
+
