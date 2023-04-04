@@ -4,7 +4,7 @@ import random
 import Node
 import Algos
 import Menu
-from Menu import Menu, NEW_MAZE_EVENT, START_EVENT
+from Menu import Menu, NEW_MAZE_EVENT, START_EVENT, FREE_DRAW_EVENT
 
 START_EVENT = pygame.USEREVENT + 1
 NEW_MAZE_EVENT = pygame.USEREVENT + 2
@@ -141,6 +141,41 @@ def draw(surface, grid, rows, width):
 	draw_grid_lines(surface, rows, width)
 	pygame.display.update()
 
+def get_clicked_pos(pos, rows, width):
+	gap = width // rows
+	y, x = pos
+
+	row = y // gap
+	col = x // gap
+
+	return row, col
+
+def free_draw(surface, grid, rows, width):
+	if pygame.mouse.get_pressed()[0]: # LEFT
+		pos = pygame.mouse.get_pos()
+		row, col = get_clicked_pos(pos, ROWS, width)
+		node = grid[row][col]
+		if not start and node != end:
+			start = node
+			start.make_start()
+
+		elif not end and node != start:
+			end = node
+			end.make_end()
+
+		elif node != end and node != start:
+			node.make_barrier()
+
+	elif pygame.mouse.get_pressed()[2]: # RIGHT
+		pos = pygame.mouse.get_pos()
+		row, col = get_clicked_pos(pos, ROWS, width)
+		node = grid[row][col]
+		node.reset()
+		if node == start:
+			start = None
+		elif node == end:
+			end = None
+
 def run_algorithms(algos_grids):
 	for algo, surface, grid_pos, start_pos, end_pos in algos_grids:
 		Algos.A_star(lambda: draw(surface, grid_pos, ROWS, GRID_WIDTH), grid_pos, start_pos, end_pos)
@@ -181,14 +216,25 @@ def main():
 		for event in pygame.event.get():
 			menu.handle_event(event)
 			if event.type == START_EVENT or (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE):
+				grids = [top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid]
+				for grid in grids:
+					for row in grid:
+						for node in row:
+							node.update_neighbours(grid)
 				run_algorithms([
 					(Algos.A_star, top_left_surf, top_left_grid, start_node, end_node),
 					(Algos.DFS, top_right_surf, top_right_grid, start_node, end_node),
 					# Add more algorithms and grids here as needed
 				])
 
-			if event.type == NEW_MAZE_EVENT:
+			elif event.type == NEW_MAZE_EVENT:
 				grid_needs_update = True
+			
+			elif event.type == FREE_DRAW_EVENT:
+				free_draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH)
+				free_draw(top_right_surf, top_right_grid, ROWS, GRID_WIDTH)
+				free_draw(bottom_left_surf, bottom_left_grid, ROWS, GRID_WIDTH)
+				free_draw(bottom_right_surf, bottom_right_grid, ROWS, GRID_WIDTH)
 
 		# Update the menu and display
 		menu.update(0.0)

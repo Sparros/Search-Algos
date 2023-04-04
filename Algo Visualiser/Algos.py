@@ -13,7 +13,6 @@ def reconstruct_path(came_from, current, draw):
 		draw()
 
 def A_star(draw, grid, start, end):
-	print("A_star function called.")
 	count = 0
 	open_set = PriorityQueue()
 	open_set.put((0, count, start))
@@ -59,31 +58,31 @@ def A_star(draw, grid, start, end):
 	return False
 
 def DFS(draw, grid, start, end, visited=None):
-    if visited is None:
-        visited = set()
+	if visited is None:
+		visited = set()
 
-    if start == end:
-        return True
+	if start == end:
+		return True
 
-    row, col = start.get_pos()
-    neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+	row, col = start.get_pos()
+	neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
 
-    for neighbor_row, neighbor_col in neighbors:
-        if 0 <= neighbor_row < len(grid) and 0 <= neighbor_col < len(grid[0]):
-            neighbor = grid[neighbor_row][neighbor_col]
-            if neighbor not in visited and not neighbor.is_barrier():
-                visited.add(neighbor)
-                neighbor.make_open()
-                draw()
+	for neighbor_row, neighbor_col in neighbors:
+		if 0 <= neighbor_row < len(grid) and 0 <= neighbor_col < len(grid[0]):
+			neighbor = grid[neighbor_row][neighbor_col]
+			if neighbor not in visited and not neighbor.is_barrier():
+				visited.add(neighbor)
+				neighbor.make_open()
+				draw()
 
-                if DFS(draw, grid, neighbor, end, visited):
-                    neighbor.make_path()
-                    draw()
-                    return True
+				if DFS(draw, grid, neighbor, end, visited):
+					neighbor.make_path()
+					draw()
+					return True
+				
+				neighbor.make_closed()
+				draw()
 
-                neighbor.make_closed()
-                draw()
-
-    return False
+	return False
 
 
