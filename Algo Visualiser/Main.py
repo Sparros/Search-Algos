@@ -13,6 +13,7 @@ NEW_MAZE_EVENT = pygame.USEREVENT + 2
 pygame.init()
 pygame.display.set_caption("grid")
 
+
 PADDING = 20
 MENU_WIDTH = 250
 WIDTH = 800 
