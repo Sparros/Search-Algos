@@ -2,11 +2,6 @@ import pygame_gui
 import pygame
 from pygame_gui.core import ObjectID
 
-# Custom event IDs
-START_EVENT = pygame.USEREVENT + 1
-NEW_MAZE_EVENT = pygame.USEREVENT + 2
-FREE_DRAW_EVENT = pygame.USEREVENT + 3
-
 class Menu:
 	def __init__(self, width, height):
 		self.width = width
@@ -77,12 +72,12 @@ class Menu:
 
 		self.parallel_checkbox = pygame_gui.elements.UIButton(
 			relative_rect=pygame.Rect((40, 380), (150, 30)),
-			text='[ ] Parallel',
+			text='[X] Parallel',
 			manager=self.manager,
 			object_id=ObjectID(class_id='@checkbox_button', 
 		      					object_id='#parallel-check-box')
 		)
-		self.parallel_checkbox.checked = False
+		self.parallel_checkbox.checked = True
 
 		self.title_label = pygame_gui.elements.ui_label.UILabel(
 			relative_rect=pygame.Rect((20, 10), (self.width - 20, 24)),
@@ -122,20 +117,16 @@ class Menu:
 	def handle_event(self, event):
 		# Handle GUI events
 		self.manager.process_events(event)
-
+		action = None
 		# Handle button clicks
 		if event.type == pygame.USEREVENT:
-			if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-				print("Button clicked:", event.ui_element)
-				if event.ui_element == self.start_button:
-					# Start button clicked                   
-					pygame.event.post(pygame.event.Event(START_EVENT))
+			if event.user_type == pygame_gui.UI_BUTTON_PRESSED:			
+				if event.ui_element == self.start_button:                 
+					action = "START_EVENT"
 				elif event.ui_element == self.new_maze_button:
-					# New Maze button clicked
-					pygame.event.post(pygame.event.Event(NEW_MAZE_EVENT))
+					action = "NEW_MAZE_EVENT"				
 				elif event.ui_element == self.free_draw_button:
-					# Free Draw button clicked
-					pygame.event.post(pygame.event.Event(FREE_DRAW_EVENT))
+					action = "FREE_DRAW_EVENT"
 				elif event.ui_element == self.sequential_checkbox:
 					if not self.sequential_checkbox.checked:
 						self.sequential_checkbox.checked = True
@@ -148,7 +139,8 @@ class Menu:
 						self.parallel_checkbox.set_text('[X] Parallel')
 						self.sequential_checkbox.checked = False
 						self.sequential_checkbox.set_text('[ ] Sequential')
-
+		return action
+	
 	def update(self, delta):
 		# Update GUI
 		self.manager.update(delta)

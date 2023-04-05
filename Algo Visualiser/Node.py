@@ -13,71 +13,73 @@ TURQUOISE = (64, 224, 208)
 
 
 class Node:
-	def __init__(self, row, col, gap, total_rows):
-		self.row = row
-		self.col = col
-		self.x = row * gap
-		self.y = col * gap
-		self.color = WHITE
-		self.neighbours = []
-		self.width = gap
-		self.total_rows = total_rows
+    def __init__(self, row, col, gap, total_rows):
+        self.row = row
+        self.col = col
+        self.x = row * gap
+        self.y = col * gap
+        self.color = WHITE
+        self.neighbours = []
+        self.width = gap
+        self.total_rows = total_rows
 
-	def get_pos(self):
-		return self.row, self.col
+    def get_pos(self):
+        return self.row, self.col
 
-	def is_closed(self):
-		return self.color == RED
+    def is_closed(self):
+        return self.color == RED
 
-	def is_open(self):
-		return self.color == GREEN
+    def is_open(self):
+        return self.color == GREEN
 
-	def is_barrier(self):
-		return self.color == BLACK
+    def is_barrier(self):
+        return self.color == BLACK
 
-	def is_start(self):
-		return self.color == ORANGE
+    def is_start(self):
+        return self.color == ORANGE
 
-	def is_end(self):
-		return self.color == TURQUOISE
+    def is_end(self):
+        return self.color == TURQUOISE
 
-	def reset(self):
-		self.color = WHITE
+    def reset(self):
+        self.color = WHITE
 
-	def make_start(self):
-		self.color = ORANGE
+    def make_start(self):
+        self.color = ORANGE
 
-	def make_closed(self):
-		self.color = RED
+    def make_closed(self):
+        self.color = RED
 
-	def make_open(self):
-		self.color = GREEN
+    def make_open(self):
+        self.color = GREEN
 
-	def make_barrier(self):
-		self.color = BLACK
+    def make_barrier(self):
+        self.color = BLACK
 
-	def make_end(self):
-		self.color = TURQUOISE
+    def make_end(self):
+        self.color = TURQUOISE
 
-	def make_path(self):
-		self.color = PURPLE
+    def make_path(self):
+        self.color = PURPLE
 
-	def draw(self, win):
-		pygame.draw.rect(win, self.color, pygame.Rect(self.x, self.y, self.width + 1, self.width + 1))
+    def draw(self, win):
+        pygame.draw.rect(win, self.color, pygame.Rect(self.x, self.y, self.width + 1, self.width + 1))
 
-	def update_neighbours(self, grid):
-		self.neighbours = []
-		if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier(): # DOWN
-			self.neighbours.append(grid[self.row + 1][self.col])
+    def update_neighbours(self, grid):
+        self.neighbours = []
+        if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier(): # DOWN
+            self.neighbours.append(grid[self.row + 1][self.col])
+            print(f"DOWN neighbor added: {grid[self.row + 1][self.col].get_pos()}")
+        if self.row > 0 and not grid[self.row - 1][self.col].is_barrier(): # UP
+            self.neighbours.append(grid[self.row - 1][self.col])
+            print(f"UP neighbor added: {grid[self.row - 1][self.col].get_pos()}")
+        if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier(): # RIGHT
+            self.neighbours.append(grid[self.row][self.col + 1])
+            print(f"RIGHT neighbor added: {grid[self.row][self.col + 1].get_pos()}")
 
-		if self.row > 0 and not grid[self.row - 1][self.col].is_barrier(): # UP
-			self.neighbours.append(grid[self.row - 1][self.col])
+        if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): # LEFT
+            self.neighbours.append(grid[self.row][self.col - 1])
+            print(f"LEFT neighbor added: {grid[self.row][self.col - 1].get_pos()}")
 
-		if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier(): # RIGHT
-			self.neighbours.append(grid[self.row][self.col + 1])
-
-		if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): # LEFT
-			self.neighbours.append(grid[self.row][self.col - 1])
-
-	def __lt__(self, other):
-		return False
+    def __lt__(self, other):
+        return False
