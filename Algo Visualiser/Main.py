@@ -8,7 +8,7 @@ from Menu import Menu
 
 # Initialize pygame
 pygame.init()
-pygame.display.set_caption("grid")
+pygame.display.set_caption("Algorithm Pathfinding")
 
 
 PADDING = 20
