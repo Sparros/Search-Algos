@@ -62,14 +62,26 @@ class Menu:
         )
         self.parallel_checkbox.checked = True
 
+        self.rows_label = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect((20, 400), (50, 24)),
+            text="rows:",
+            manager=self.manager,
+        )
+        self.row_drop_menu = pygame_gui.elements.UIDropDownMenu(
+            relative_rect=pygame.Rect((40, 400), (50, 24)),
+            options_list=["10", "15", "20", "25", "30", "35", "40", "45", "50"],
+            starting_option="25",
+            manager=self.manager
+        )
+
         self.title_label = pygame_gui.elements.ui_label.UILabel(
-            relative_rect=pygame.Rect((20, 420), (self.width - 40, 24)),
+            relative_rect=pygame.Rect((20, 440), (self.width - 40, 24)),
             text='Simulate:',
             manager=self.manager,
             object_id="#simulate-title"
         )
         self.traffic_checkbox = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((40, 440), (self.width - 80, 30)),
+            relative_rect=pygame.Rect((40, 460), (self.width - 80, 30)),
             text='[ ] Traffic',
             manager=self.manager,
             object_id=ObjectID(class_id='@checkbox_button', 
@@ -78,15 +90,23 @@ class Menu:
         self.traffic_checkbox.checked = False
 
         self.new_maze_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((75, 500), (button_width, button_height)),
+            relative_rect=pygame.Rect((75, 520), (button_width, button_height)),
             text='New Maze',
             manager=self.manager,
             object_id=ObjectID(class_id='@button', 
                                object_id='#new-maze-button')
         )
+        self.regen_label = pygame_gui.elements.ui_label.UILabel(
+            relative_rect=pygame.Rect((10, 520 + button_height), (self.width - 20, 24)),
+            text='Maze requires regenerating',
+            manager=self.manager,
+            object_id=ObjectID(class_id='@regen-text', 
+                               object_id='#regen-text')
+        )
+        self.regen_label.hide()
 
         self.free_draw_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((75, 520 + button_height), (button_width, button_height)),
+            relative_rect=pygame.Rect((75, 570 + button_height), (button_width, button_height)),
             text='Free Draw',
             manager=self.manager,
             object_id=ObjectID(class_id='@button', 
@@ -123,6 +143,7 @@ class Menu:
         # Handle GUI events
         self.manager.process_events(event)
         action = None
+        rows = None
         # Handle button clicks
         if event.type == pygame.USEREVENT:
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:			
@@ -134,26 +155,37 @@ class Menu:
                         self.sequential_checkbox.set_text('[X] Sequential')
                         self.parallel_checkbox.checked = False
                         self.parallel_checkbox.set_text('[ ] Parallel')
+                        return "SEQUENTIAL_EVENT"
                 elif event.ui_element == self.parallel_checkbox:
                     if not self.parallel_checkbox.checked:
                         self.parallel_checkbox.checked = True
                         self.parallel_checkbox.set_text('[X] Parallel')
                         self.sequential_checkbox.checked = False
                         self.sequential_checkbox.set_text('[ ] Sequential')
+                        return "PARALLEL_EVENT"
+                elif event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+                    if event.ui_element == self.row_drop_menu:
+                        rows = int(event.text)
+                        return "ROW_CHANGE_EVENT", rows
                 elif event.ui_element == self.traffic_checkbox:
                     if not self.traffic_checkbox.checked:
                         self.traffic_checkbox.checked = True
                         self.traffic_checkbox.set_text('[X] Traffic')
+                        self.regen_label.show()
                     elif self.traffic_checkbox.checked:
                         self.traffic_checkbox.checked = False
                         self.traffic_checkbox.set_text('[ ] Traffic')
+                        self.regen_label.hide()
                 elif event.ui_element == self.new_maze_button:
-                    action = "NEW_MAZE_EVENT"				
+                    action = "NEW_MAZE_EVENT"  
+                    self.regen_label.hide()
+                    action = "NEW_MAZE_EVENT"	
+                    self.regen_label.hide()			
                 elif event.ui_element == self.free_draw_button:
                     action = "FREE_DRAW_EVENT"
 
 
-        return action
+        return action, self.traffic_checkbox.checked, rows
     
     def update(self, delta):
         # Update GUI

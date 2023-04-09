@@ -8,5 +8,12 @@
             "normal_text":"#ffffff",
             "hovered_text":"#ffffff"
         }
+    },
+    "@regen-text":
+    {
+        "colours":
+        {
+            "normal_text": "#FF0000"
+        }
     }
 }

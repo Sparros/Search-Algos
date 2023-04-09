@@ -168,6 +168,7 @@ def draw_grid(win, rows, width):
 
 
 def draw(win, grid, rows, width):
+	print("draw function called")
 	win.fill(WHITE)
 
 	for row in grid:

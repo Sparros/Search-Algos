@@ -40,6 +40,9 @@ class Node:
 
     def is_end(self):
         return self.color == TURQUOISE
+    
+    def is_traffic(self):
+        return self.color == YELLOW
 
     def reset(self):
         self.color = WHITE
@@ -61,6 +64,9 @@ class Node:
 
     def make_path(self):
         self.color = PURPLE
+
+    def make_traffic(self):
+        self.color = YELLOW
 
     def draw(self, win):
         pygame.draw.rect(win, self.color, pygame.Rect(self.x, self.y, self.width + 1, self.width + 1))

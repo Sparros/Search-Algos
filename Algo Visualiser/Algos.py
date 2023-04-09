@@ -1,5 +1,8 @@
 import pygame
 from queue import PriorityQueue
+from Node import Node
+
+TRAFFIC_COST = 5
 
 def h(p1, p2):
     x1, y1 = p1
@@ -44,6 +47,8 @@ def A_star(draw, grid, start, end):
         for neighbour in current.neighbours:
             print(f"Neighbor: {neighbour.get_pos()}")
             temp_g_score = g_score[current] + 1
+            if neighbour.is_traffic():
+                temp_g_score += TRAFFIC_COST
 
             if temp_g_score < g_score[neighbour]:
                 came_from[neighbour] = current
