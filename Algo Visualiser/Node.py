@@ -25,6 +25,9 @@ class Node:
 
     def get_pos(self):
         return self.row, self.col
+    
+    def is_empty(self):
+        return self.color == WHITE and not self.is_start() and not self.is_end()
 
     def is_closed(self):
         return self.color == RED

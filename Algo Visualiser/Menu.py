@@ -63,12 +63,12 @@ class Menu:
         self.parallel_checkbox.checked = True
 
         self.rows_label = pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect((20, 400), (50, 24)),
+            relative_rect=pygame.Rect((self.width // 2 - 50, 400), (50, 24)),
             text="rows:",
             manager=self.manager,
         )
         self.row_drop_menu = pygame_gui.elements.UIDropDownMenu(
-            relative_rect=pygame.Rect((40, 400), (50, 24)),
+            relative_rect=pygame.Rect((self.width // 2 + 5, 400), (50, 24)),
             options_list=["10", "15", "20", "25", "30", "35", "40", "45", "50"],
             starting_option="25",
             manager=self.manager
@@ -155,18 +155,14 @@ class Menu:
                         self.sequential_checkbox.set_text('[X] Sequential')
                         self.parallel_checkbox.checked = False
                         self.parallel_checkbox.set_text('[ ] Parallel')
-                        return "SEQUENTIAL_EVENT"
+                        action = "SEQUENTIAL_EVENT"
                 elif event.ui_element == self.parallel_checkbox:
                     if not self.parallel_checkbox.checked:
                         self.parallel_checkbox.checked = True
                         self.parallel_checkbox.set_text('[X] Parallel')
                         self.sequential_checkbox.checked = False
                         self.sequential_checkbox.set_text('[ ] Sequential')
-                        return "PARALLEL_EVENT"
-                elif event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
-                    if event.ui_element == self.row_drop_menu:
-                        rows = int(event.text)
-                        return "ROW_CHANGE_EVENT", rows
+                        action = "PARALLEL_EVENT"
                 elif event.ui_element == self.traffic_checkbox:
                     if not self.traffic_checkbox.checked:
                         self.traffic_checkbox.checked = True
@@ -178,12 +174,15 @@ class Menu:
                         self.regen_label.hide()
                 elif event.ui_element == self.new_maze_button:
                     action = "NEW_MAZE_EVENT"  
-                    self.regen_label.hide()
-                    action = "NEW_MAZE_EVENT"	
-                    self.regen_label.hide()			
+                    self.regen_label.hide()		
+                    print("New maze button pressed")
                 elif event.ui_element == self.free_draw_button:
                     action = "FREE_DRAW_EVENT"
-
+                    print("Free draw button pressed")
+            if event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+                    #if event.ui_element == self.row_drop_menu:
+                    rows = int(event.text)  
+                    action = "ROW_CHANGE_EVENT"
 
         return action, self.traffic_checkbox.checked, rows
     
