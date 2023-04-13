@@ -20,6 +20,7 @@ def A_star(draw, grid, start, end):
     count = 0
     open_set = PriorityQueue()
     open_set.put((0, count, start))
+    print(f"Start node: {start.get_pos()}")
     came_from = {}
     g_score = {node: float("inf") for row in grid for node in row}
     g_score[start] = 0
@@ -27,7 +28,8 @@ def A_star(draw, grid, start, end):
     f_score[start] = h(start.get_pos(), end.get_pos())
 
     open_set_hash = {start}
-
+    print(f"Open set initial: {open_set_hash}")
+    counter = 0
     while not open_set.empty():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -45,7 +47,7 @@ def A_star(draw, grid, start, end):
             return True
 
         for neighbour in current.neighbours:
-            print(f"Neighbor: {neighbour.get_pos()}")
+            print(f"Neighbour: {neighbour.get_pos()}")
             temp_g_score = g_score[current] + 1
             if neighbour.is_traffic():
                 temp_g_score += TRAFFIC_COST
@@ -61,7 +63,9 @@ def A_star(draw, grid, start, end):
                     neighbour.make_open()
 
         draw()
-    
+        counter += 1
+        print("loop count: ")
+        print(counter)
         if current != start:
             current.make_closed()
 
@@ -98,4 +102,80 @@ def DFS(draw, grid, start, end, visited=None):
     print("DPS finished")
     return False
 
+# BFS algorithm
+def BFS(draw, grid, start, end):
+    queue = [start]
+    came_from = {}
+    start.set_distance(0)
+
+    while queue:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+        current = queue.pop(0)
+
+        if current == end:
+            reconstruct_path(came_from, end, draw)
+            end.make_end()
+            return True
+
+        for neighbour in current.neighbours:
+            if neighbour not in came_from:
+                came_from[neighbour] = current
+                neighbour.set_distance(current.distance + 1)
+                queue.append(neighbour)
+                if neighbour != end:
+                    neighbour.make_open()
+
+        draw()
+
+        if current != start:
+            current.make_closed()
+
+    return False
+
+# Dijkstra's algorithm
+def dijkstra(draw, grid, start, end):
+    count = 0
+    open_set = PriorityQueue()
+    open_set.put((0, count, start))
+    came_from = {}
+    g_score = {node: float("inf") for row in grid for node in row}
+    g_score[start] = 0
+
+    open_set_hash = {start}
+
+    while not open_set.empty():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+        current = open_set.get()[2]
+        open_set_hash.remove(current)
+
+        if current == end:
+            reconstruct_path(came_from, end, draw)
+            end.make_end()
+            return True
+
+        for neighbour in current.neighbours:
+            temp_g_score = g_score[current] + neighbour.get_weight()
+
+            if temp_g_score < g_score[neighbour]:
+                came_from[neighbour] = current
+                g_score[neighbour] = temp_g_score
+                neighbour.set_distance(temp_g_score)
+                if neighbour not in open_set_hash:
+                    count += 1
+                    open_set.put((neighbour.distance, count, neighbour))
+                    open_set_hash.add(neighbour)
+                    neighbour.make_open()
+
+        draw()
+
+        if current != start:
+            current.make_closed()
+
+    return False
 

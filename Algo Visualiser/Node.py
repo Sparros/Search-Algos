@@ -78,17 +78,16 @@ class Node:
         self.neighbours = []
         if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier(): # DOWN
             self.neighbours.append(grid[self.row + 1][self.col])
-            print(f"DOWN neighbor added: {grid[self.row + 1][self.col].get_pos()}")
+            #print(f"DOWN neighbor added: {grid[self.row + 1][self.col].get_pos()}")
         if self.row > 0 and not grid[self.row - 1][self.col].is_barrier(): # UP
             self.neighbours.append(grid[self.row - 1][self.col])
-            print(f"UP neighbor added: {grid[self.row - 1][self.col].get_pos()}")
+            #print(f"UP neighbor added: {grid[self.row - 1][self.col].get_pos()}")
         if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier(): # RIGHT
             self.neighbours.append(grid[self.row][self.col + 1])
-            print(f"RIGHT neighbor added: {grid[self.row][self.col + 1].get_pos()}")
-
+            #print(f"RIGHT neighbor added: {grid[self.row][self.col + 1].get_pos()}")
         if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): # LEFT
             self.neighbours.append(grid[self.row][self.col - 1])
-            print(f"LEFT neighbor added: {grid[self.row][self.col - 1].get_pos()}")
+            #print(f"LEFT neighbor added: {grid[self.row][self.col - 1].get_pos()}")
 
     def __lt__(self, other):
         return False

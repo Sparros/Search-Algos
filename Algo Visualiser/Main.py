@@ -45,25 +45,23 @@ def generate_maze(grid, start, end, add_traffic, traffic_probability=0.1):
             if not node.is_start() and not node.is_end():
                 node.make_barrier()
 
-    def get_neighbors(x, y):
-        neighbors = []
+    def get_neighbours(x, y):
+        neighbours = []
         directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         for dx, dy in directions:
             nx, ny = x + dx * 2, y + dy * 2
             if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
-                neighbors.append((nx, ny, dx, dy))
-        return neighbors
+                neighbours.append((nx, ny, dx, dy))
+        return neighbours
 
     def carve_paths(x, y, visited):
         visited.add((x, y))
         if not grid[x][y].is_start() and not grid[x][y].is_end():
             grid[x][y].reset()
-            # if add_traffic and random.random() < traffic_probability:
-            #     grid[x][y].make_traffic()
-        neighbors = get_neighbors(x, y)
-        random.shuffle(neighbors)
+        neighbours = get_neighbours(x, y)
+        random.shuffle(neighbours)
 
-        for nx, ny, dx, dy in neighbors:
+        for nx, ny, dx, dy in neighbours:
             if (nx, ny) not in visited:
                 grid[x + dx][y + dy].reset()  
                 carve_paths(nx, ny, visited)
@@ -71,7 +69,7 @@ def generate_maze(grid, start, end, add_traffic, traffic_probability=0.1):
     visited = set()
     carve_paths(start.row, start.col, visited)
 
-    print(add_traffic)
+    #print(add_traffic)
     if add_traffic:
         for row in grid:
             for node in row:
@@ -83,6 +81,7 @@ def set_start_end(grid, start_row, start_col, end_row, end_col):
     end = grid[end_row][end_col]
     start.make_start()
     end.make_end()
+    #print(f"Set start node: {start}, end node: {end}")
     return start, end
 
 def create_single_grid(rows, width):
@@ -109,7 +108,7 @@ def create_and_copy_grids(rows, width, traffic):
 
     if FREE_DRAW_MODE:
         return top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, None, None
-
+    #print(f"Grids created - start node: {start_node}, end node: {end_node}")
     return top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node
 
 def copy_grid(source_grid):
@@ -206,34 +205,62 @@ def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
 
     return start_end_nodes
 
-def run_algorithms_sequentially(top_left_grid, start_node, end_node):
-    # Run algorithms sequentially, e.g.:
-    Algos.A_star(lambda: draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH), top_left_grid, start_node, end_node)   
-    #Algos.DFS(lambda: None, top_right_grid, start_node, end_node)
+def run_algorithms_sequentially(grids, start_node, end_node):
+    print(f"Sequential - start node: {start_node}, end node: {end_node}")
+    Algos.A_star(lambda: draw(top_left_surf, grids[0], ROWS, GRID_WIDTH), grids[0], start_node, end_node)  
+    # Algos.DFS(lambda: draw(top_right_surf, grids[1], start_node, end_node), grids[1], start_node, end_node)
+    # Algos.BFS(lambda: draw(bottom_left_surf, grids[2], start_node, end_node), grids[2], start_node, end_node)
+    # Algos.dijkstra(lambda: draw(bottom_right_surf, grids[3], start_node, end_node), grids[3], start_node, end_node)
 
-def run_algorithms_parallel(top_left_grid, start_node, end_node):
+def run_algorithms_parallel(grids, start_node, end_node):
+    print(f"Parallel - start node: {start_node}, end node: {end_node}")
     # Use threading to run algorithms in parallel
     from threading import Thread
 
-    thread1 = Thread(target=Algos.A_star(lambda: draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH), top_left_grid, start_node, end_node))
-    #thread2 = Thread(target=algorithm2)
+    thread1 = Thread(target=Algos.A_star, args=(lambda: draw(top_left_surf, grids[0], ROWS, GRID_WIDTH), grids[0], start_node, end_node))
+    thread2 = Thread(target=Algos.DFS, args=(lambda: draw(top_right_surf, grids[1], ROWS, GRID_WIDTH), grids[1], start_node, end_node))
+    thread3 = Thread(target=Algos.BFS, args=(lambda: draw(bottom_left_surf, grids[2], ROWS, GRID_WIDTH), grids[2], start_node, end_node))
+    thread4 = Thread(target=Algos.dijkstra, args=(lambda: draw(bottom_right_surf, grids[3], ROWS, GRID_WIDTH), grids[3], start_node, end_node))
 
     thread1.start()
     #thread2.start()
+    #thread3.start()
+    # thread4.start()
 
     thread1.join()
     #thread2.join()
+    #thread3.join()
+    # thread4.join()
 
 def update_grids(surfaces, grids, rows, width):
     for surf, grid in zip(surfaces, grids):
         draw(surf, grid, rows, width)
 
-def main():
+def create_app():
     top_left_title = create_title_surface("A* Search")
     top_right_title = create_title_surface("DFS Search")
     bottom_left_title = create_title_surface("Bottom Left Grid")
     bottom_right_title = create_title_surface("Bottom Right Grid")
-    
+
+    # Blit the grid surfaces onto the window
+    GRID_SCREEN.blit(top_left_title, (0, PADDING))
+    GRID_SCREEN.blit(top_left_surf, (PADDING, PADDING + FONT_SIZE))
+    GRID_SCREEN.blit(top_right_title, (GRID_WIDTH + PADDING * 2, PADDING))
+    GRID_SCREEN.blit(top_right_surf, (GRID_WIDTH + PADDING * 2, PADDING + FONT_SIZE))
+    GRID_SCREEN.blit(bottom_left_title, (0, GRID_HEIGHT + PADDING * 2 + FONT_SIZE))
+    GRID_SCREEN.blit(bottom_left_surf, (PADDING, GRID_HEIGHT + PADDING * 2 + FONT_SIZE * 2))
+    GRID_SCREEN.blit(bottom_right_title, (GRID_WIDTH + PADDING * 2, GRID_HEIGHT + PADDING * 2 + FONT_SIZE))
+    GRID_SCREEN.blit(bottom_right_surf, (GRID_WIDTH + PADDING * 2, GRID_HEIGHT + PADDING * 2 + FONT_SIZE * 2))
+    WIN.blit(GRID_SCREEN, (MENU_WIDTH, 0))
+
+    # Draw the menu
+    WIN.blit(MENU, (0, 0))
+    menu.draw(MENU)
+
+    pygame.display.update()
+
+
+def main():  
     global FREE_DRAW_MODE
     grid_needs_update = True
     execution_mode = "PARALLEL"
@@ -248,35 +275,17 @@ def main():
     grids = [top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid]
 
     while True:
-        if grid_needs_update:
-            top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node = create_and_copy_grids(ROWS, GRID_WIDTH, traffic)
-            draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH)
-            draw(top_right_surf, top_right_grid, ROWS, GRID_WIDTH)
-            draw(bottom_left_surf, bottom_left_grid, ROWS, GRID_WIDTH)
-            draw(bottom_right_surf, bottom_right_grid, ROWS, GRID_WIDTH)
+        create_app()
+        #draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH)
+        if grid_needs_update: # if maze change or grid size change
+            print("Updating grids")
+            update_grids(surfaces, grids, ROWS, GRID_WIDTH)
             grid_needs_update = False
+            start_node, end_node = set_start_end(top_left_grid, 1, 1, ROWS - 2, ROWS - 2)
 
         if FREE_DRAW_MODE:
             start_end_nodes = free_draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH, start_end_nodes, PADDING + MENU_WIDTH, PADDING + FONT_SIZE)
-            draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH)
-            draw(top_right_surf, top_left_grid, ROWS, GRID_WIDTH)
-            draw(bottom_left_surf, top_left_grid, ROWS, GRID_WIDTH)
-            draw(bottom_right_surf, top_left_grid, ROWS, GRID_WIDTH)
-
-        # Blit the grid surfaces onto the window
-        GRID_SCREEN.blit(top_left_title, (0, PADDING))
-        GRID_SCREEN.blit(top_left_surf, (PADDING, PADDING + FONT_SIZE))
-        GRID_SCREEN.blit(top_right_title, (GRID_WIDTH + PADDING * 2, PADDING))
-        GRID_SCREEN.blit(top_right_surf, (GRID_WIDTH + PADDING * 2, PADDING + FONT_SIZE))
-        GRID_SCREEN.blit(bottom_left_title, (0, GRID_HEIGHT + PADDING * 2 + FONT_SIZE))
-        GRID_SCREEN.blit(bottom_left_surf, (PADDING, GRID_HEIGHT + PADDING * 2 + FONT_SIZE * 2))
-        GRID_SCREEN.blit(bottom_right_title, (GRID_WIDTH + PADDING * 2, GRID_HEIGHT + PADDING * 2 + FONT_SIZE))
-        GRID_SCREEN.blit(bottom_right_surf, (GRID_WIDTH + PADDING * 2, GRID_HEIGHT + PADDING * 2 + FONT_SIZE * 2))
-        WIN.blit(GRID_SCREEN, (MENU_WIDTH, 0))
-
-        # Draw the menu
-        WIN.blit(MENU, (0, 0))
-        menu.draw(MENU)
+            update_grids(surfaces, grids, ROWS, GRID_WIDTH)
 
         # Handle events
         for event in pygame.event.get():
@@ -287,36 +296,44 @@ def main():
                 execution_mode = "SEQUENTIAL"
             if action == "START_EVENT" or (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE):
                 print("start event triggered")
+
+                if start_node is None or end_node is None:
+                    print("Start or end node is not set. Please set both nodes before running the algorithm.")
+                    continue
+
                 for grid in grids:
                     for row in grid:
                         for node in row:
                             node.update_neighbours(grid)       
                 if execution_mode == "SEQUENTIAL":
-                    run_algorithms_sequentially(top_left_grid, start_node, end_node)
+                    run_algorithms_sequentially(grids, start_node, end_node)
                 elif execution_mode == "PARALLEL":
-                    run_algorithms_parallel(top_left_grid, start_node, end_node)
+                    run_algorithms_parallel(grids, start_node, end_node)
             
             elif action == "ROW_CHANGE_EVENT" and new_rows is not None:
                     ROWS = new_rows
-                    grid_needs_update = True  # 'value' should be the new number of rows
+                    top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node = create_and_copy_grids(ROWS, GRID_WIDTH, traffic)
+                    grids = [top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid]
+                    grid_needs_update = True 
                     if FREE_DRAW_MODE:
                         start_end_nodes = (None, None)
                         
             elif action == "NEW_MAZE_EVENT":
+                top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node = create_and_copy_grids(ROWS, GRID_WIDTH, traffic)
+                grids = [top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid]
                 FREE_DRAW_MODE = False
                 grid_needs_update = True
 
-            
             elif action == "FREE_DRAW_EVENT":
                 FREE_DRAW_MODE = True
                 if FREE_DRAW_MODE:
-                    for grid in [top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid]:
+                    for grid in grids:
                         for row in grid: 
                             for node in row:
                                 node.reset()
 
         # Update the menu and display
         menu.update(0.0)
-        pygame.display.update()
+        #pygame.display.update()
 
 main()
