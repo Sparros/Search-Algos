@@ -71,8 +71,8 @@ class Node:
     def make_traffic(self):
         self.color = YELLOW
 
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, pygame.Rect(self.x, self.y, self.width + 1, self.width + 1))
+    def draw(self, win, offset_x=0, offset_y=0):
+        pygame.draw.rect(win, self.color, pygame.Rect(self.x + offset_x, self.y + offset_y, self.width + 1, self.width + 1))
 
     def update_neighbours(self, grid):
         self.neighbours = []

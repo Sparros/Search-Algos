@@ -9,13 +9,16 @@ def h(p1, p2):
     x2, y2 = p2
     return abs(x1 - x2) + abs(y1 - y2)
 
-def reconstruct_path(came_from, current, draw):
+def reconstruct_path(came_from, current, node_draw_func):
+    print("Reconstructing path")
     while current in came_from:
         current = came_from[current]
         current.make_path()
-        draw()
+        node_draw_func(current)
+        pygame.display.update()
 
-def A_star(draw, grid, start, end):
+
+def A_star(grid, start, end, node_draw_func, update_display_func):
     print("A_star called")
     count = 0
     open_set = PriorityQueue()
@@ -37,12 +40,12 @@ def A_star(draw, grid, start, end):
 
         current = open_set.get()[2]
         open_set_hash.remove(current)
-
+        
         print(f"Current node: {current.get_pos()}")  # Add this line
         print(f"Open set size: {len(open_set_hash)}")  # Add this line
 
         if current == end:
-            reconstruct_path(came_from, end, draw)
+            reconstruct_path(came_from, end, node_draw_func)
             end.make_end()
             return True
 
@@ -61,45 +64,54 @@ def A_star(draw, grid, start, end):
                     open_set.put((f_score[neighbour], count, neighbour))
                     open_set_hash.add(neighbour)
                     neighbour.make_open()
+                    node_draw_func(neighbour)  
+                    pygame.display.update()  
 
-        draw()
+       
         counter += 1
         print("loop count: ")
         print(counter)
         if current != start:
             current.make_closed()
+            node_draw_func(current)  
+            pygame.display.update()  
+            update_display_func()
 
     return False
 
-def DFS(draw, grid, start, end, visited=None):
-    print("DFS called")
-    if visited is None:
-        visited = set()
+def DFS(grid, start, end, node_draw_func, update_display):
+    stack = [start]
+    visited = set()
+    came_from = {}
 
-    if start == end:
-        print("Found end node")
-        return True
+    while stack:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
 
-    row, col = start.get_pos()
-    neighbours = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+        current = stack.pop()
+        if current not in visited:
+            visited.add(current)
 
-    for neighbour_row, neighbour_col in neighbours:
-        if 0 <= neighbour_row < len(grid) and 0 <= neighbour_col < len(grid[0]):
-            neighbour = grid[neighbour_row][neighbour_col]
-            if neighbour not in visited and not neighbour.is_barrier():
-                visited.add(neighbour)
-                neighbour.make_open()
-                draw()
+            if current == end:
+                #reconstruct_path(came_from, end, update_display)  # If you want to reconstruct the path, you can implement this.
+                end.make_end()
+                update_display()
+                return True
 
-                if DFS(draw, grid, neighbour, end, visited):
-                    print("Path found")
-                    neighbour.make_path()
-                    draw()
-                    return True
-                
-                neighbour.make_closed()
-                draw()
-    print("DPS finished")
+            for neighbour in current.neighbours:
+                if neighbour not in visited and not neighbour.is_barrier():
+                    stack.append(neighbour)
+                    came_from[neighbour] = current
+                    neighbour.make_open()
+                    node_draw_func(neighbour)
+
+            if current != start:
+                current.make_closed()
+                node_draw_func(current)
+
+            update_display()
+
     return False
 
 # BFS algorithm
