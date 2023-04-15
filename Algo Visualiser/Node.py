@@ -22,6 +22,7 @@ class Node:
         self.neighbours = []
         self.width = gap
         self.total_rows = total_rows
+        self.distance = float("inf")
 
     def get_pos(self):
         return self.row, self.col
