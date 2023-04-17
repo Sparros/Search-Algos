@@ -275,7 +275,7 @@ def update_display():
     GRID_SCREEN.blit(bottom_right_surf, (GRID_WIDTH + PADDING * 3, GRID_HEIGHT + PADDING * 3 + FONT_SIZE * 2))
     WIN.blit(GRID_SCREEN, (MENU_WIDTH, 0))
     # Update the display
-    pygame.display.update()
+    pygame.display.flip()
 
 
 def main():  
@@ -355,4 +355,5 @@ def main():
         menu.update(0.0)
         #pygame.display.update()
 
-main()
+if __name__ == "__main__":
+    main()

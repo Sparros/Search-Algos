@@ -81,7 +81,7 @@ class Menu:
             object_id="#simulate-title"
         )
         self.traffic_checkbox = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((40, 460), (self.width - 80, 30)),
+            relative_rect=pygame.Rect((30, 460), (self.width - 80, 30)),
             text='[ ] Traffic',
             manager=self.manager,
             object_id=ObjectID(class_id='@checkbox_button', 
@@ -97,7 +97,7 @@ class Menu:
                                object_id='#new-maze-button')
         )
         self.regen_label = pygame_gui.elements.ui_label.UILabel(
-            relative_rect=pygame.Rect((10, 520 + button_height), (self.width - 20, 24)),
+            relative_rect=pygame.Rect((10, 520 + button_height), (self.width + 8, 28)),
             text='Maze requires regenerating',
             manager=self.manager,
             object_id=ObjectID(class_id='@regen-text', 

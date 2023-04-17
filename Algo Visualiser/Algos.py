@@ -19,7 +19,6 @@ def reconstruct_path(came_from, current, node_draw_func):
             current.make_path() 
             node_draw_func(current)
 
-
 def A_star(grid, start, end, node_draw_func, update_display_func):
     print("A_star called")
     count = 0
