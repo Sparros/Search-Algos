@@ -10,7 +10,8 @@ class Menu:
         self.width = width
         self.height = height
         self.manager = pygame_gui.UIManager((width, height), 'Algo Visualiser\\themes.json')
-        
+        self.selected_algorithms = set(["A*", "BFS", "DFS", "Dijkstra"])
+
         button_width = 100
         button_height = 50
         gap = 10
@@ -154,7 +155,7 @@ class Menu:
             self.checkboxes.append(checkbox)
 
         self.user_help_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((self.width // 2 - button_width // 2, 700), (button_width, button_height)),
+            relative_rect=pygame.Rect((self.width // 2 - button_width // 2, 700), (button_width, button_height // 1.5)),
             text='Help',
             manager=self.manager,
             object_id=ObjectID(class_id='@button', 
@@ -188,7 +189,6 @@ class Menu:
                 )
 
     def handle_event(self, event):
-        selected_algorithms = set(["A*", "BFS", "DFS", "Dijkstra"])
         # Handle GUI events
         self.manager.process_events(event)
         action = None
@@ -230,31 +230,30 @@ class Menu:
                     print("Free draw button pressed")
                 elif event.ui_element == self.user_help_button:
                     action = "HELP_EVENT"
-                    
+
                 # Handle algorithm checkboxes
                 elif event.ui_element in self.checkboxes:
                     algo_index = self.checkboxes.index(event.ui_element)
                     algo_name = ALGO_LIST[algo_index]
-                    if event.ui_element.checked:
-                        if len(selected_algorithms) == 4:
-                            event.ui_element.checked = False
-                        else:
-                            selected_algorithms.add(algo_name)
-                    else:
-                        selected_algorithms.discard(algo_name) # .remove causes KeyError if algo_name not in set
+                    if algo_name not in self.selected_algorithms and len(self.selected_algorithms) < 4:
+                        self.selected_algorithms.add(algo_name)
+                        event.ui_element.checked = True
+                    elif algo_name in self.selected_algorithms and len(self.selected_algorithms) >= 0:
+                        self.selected_algorithms.discard(algo_name) # .remove causes KeyError if algo_name not in set
+                        event.ui_element.checked = False
 
                     # Update the checkbox text
                     for i, checkbox in enumerate(self.checkboxes):
                         algo_name = ALGO_LIST[i]
-                        checkbox.checked = algo_name in selected_algorithms
-                        checkbox.set_text(f"[{'X' if algo_name in selected_algorithms else ' '}] {algo_name}")
+                        checkbox.checked = algo_name in self.selected_algorithms
+                        checkbox.set_text(f"[{'X' if algo_name in self.selected_algorithms else ' '}] {algo_name}")
 
             if event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
                     #if event.ui_element == self.row_drop_menu:
                     rows = int(event.text)  
                     action = "ROW_CHANGE_EVENT"
 
-        return action, self.traffic_checkbox.checked, rows, selected_algorithms
+        return action, self.traffic_checkbox.checked, rows, self.selected_algorithms
     
     def update(self, delta):
         # Update GUI

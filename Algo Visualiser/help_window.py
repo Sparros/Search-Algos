@@ -1,98 +1,124 @@
 import pygame
+import os
+import sys
+import pygame_gui
 
-# Initialize Pygame
-pygame.init()
+def open_help_window():
+    print("Opening help window...")
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
+    pygame.display.set_caption("Help")
+    clock = pygame.time.Clock()
+    manager = pygame_gui.UIManager((800, 600))
 
-# Set the initial size of the window
-width, height = 500, 500
-screen = pygame.display.set_mode((width, height))
+    algorithms = ["A*", "BFS", "DFS", "Dijkstra", "Greedy Best-First", "Bidirectional BFS", "Jump Point Search", "Swarm Intelligence"]
 
-# Define some colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GRAY = (200, 200, 200)
-BLUE = (0, 0, 255)
+    # Create buttons for each algorithm
+    buttons = {}
+    for i, algo in enumerate(algorithms):
+        buttons[algo] = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(0, 75 * i, 150, 75),
+                                                     text=algo,
+                                                     manager=manager)
 
-# Define the font to use for the text
-font = pygame.font.SysFont(None, 24)
+    # Create containers for each algorithm
+    containers = {}
+    for algo in algorithms:
+        containers[algo] = pygame_gui.core.ui_container.UIContainer(relative_rect=pygame.Rect(150, 0, 650, 600),
+                                                                     manager=manager)
 
-# Define the tab width and height
-TAB_WIDTH = 100
-TAB_HEIGHT = 50
+        # Add your algorithm explanation text here
+        algo_text = {
+            "A*": "A* is a pathfinding algorithm that uses a combination of Dijkstra's algorithm and a heuristic function to estimate the remaining cost to the goal.",
+            "BFS": "Breadth-First Search (BFS) is a graph traversal algorithm that explores all the vertices of a graph in breadthward motion, meaning it visits all neighbors of a vertex before visiting the neighbors' neighbors.",
+            "DFS": "Depth-First Search (DFS) is a graph traversal algorithm that explores as far as possible along a branch before backtracking to explore other branches.",
+            "Dijkstra": "Dijkstra's algorithm is a graph search algorithm that solves the single-source shortest path problem for a graph with non-negative edge weights, producing a shortest path tree.",
+            "Greedy Best-First": "Greedy Best-First is a pathfinding algorithm that selects the node that appears to be closest to the goal using a heuristic function, without considering the cost to reach the current node.",
+            "Bidirectional BFS": "Bidirectional BFS is a graph traversal algorithm that performs two simultaneous breadth-first searches, one from the start vertex and one from the end vertex, until the searches meet in the middle.",
+            "Jump Point Search": "Jump Point Search is an optimization of A* algorithm for uniform-cost grid maps, which reduces the number of nodes that need to be expanded by identifying 'jump points' that can be reached without intermediate expansions.",
+            "Swarm Intelligence": "Swarm Intelligence is a family of algorithms inspired by the collective behavior of decentralized, self-organized systems, such as ant colonies or flocks of birds. It can be applied to pathfinding problems by simulating the behavior of these systems."
+        }[algo]
 
-# Define the number of tabs
-num_tabs = 5
-max_lines = 5
-# Define the active tab index
-active_tab_index = 0
+        pygame_gui.elements.UILabel(relative_rect=pygame.Rect(10, 10, 630, 220),
+                                    text=algo_text,
+                                    manager=manager,
+                                    container=containers[algo])
 
-# Define the tab titles and text
-tab_titles = ["A* Search", "DFS Search", "BFS Search", "Dijkstra Search", "New Algorithm"]
-tab_text = ["A* Search is a heuristic search algorithm that finds the shortest path between two points in a graph. It works by using a heuristic function to estimate the distance to the goal and exploring the most promising nodes first.",
-            "DFS Search is a depth-first search algorithm that explores the depth of the search tree first. It can be used to find a path between two nodes in a graph, but it may not find the shortest path.",
-            "BFS Search is a breadth-first search algorithm that explores the breadth of the search tree first. It can be used to find the shortest path between two nodes in a graph.",
-            "Dijkstra Search is a shortest path algorithm that finds the shortest path between two points in a graph. It works by maintaining a list of the shortest paths to each node and updating the list as it explores the graph.",
-            "This is a new algorithm that does amazing things. It is the best algorithm ever created."]
+        # Add example images and gifs for each algorithm
+        # Replace 'path_to_image.png' and 'path_to_gif.gif' with the actual file paths for your images and gifs
+        image_paths = {
+            # "A*": "path_to_image.png",
+            # "BFS": "path_to_image.png",
+            # "DFS": "path_to_image.png",
+            # "Dijkstra": "path_to_image.png",
+            # "Greedy Best-First": "path_to_image.png",
+            # "Bidirectional BFS": "path_to_image.png",
+            # "Jump Point Search": "path_to_image.png",
+            # "Swarm Intelligence": "path_to_image.png"
+        }
 
-# Main game loop
-running = True
-while running:
-    # Handle events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.VIDEORESIZE:
-            # Handle window resizing
-            width, height = event.w, event.h
-            screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Handle tab clicks
-            mouse_pos = pygame.mouse.get_pos()
-            for i in range(num_tabs):
-                if i != active_tab_index:
-                    if i * TAB_WIDTH < mouse_pos[0] < (i + 1) * TAB_WIDTH and 0 < mouse_pos[1] < TAB_HEIGHT:
-                        active_tab_index = i
+        gif_paths = {
+            # "A*": "path_to_gif.gif",
+            "BFS": "Algo Visualiser/resources/Breadth-First-Search-Algorithm/Breadth-First-Search-Algorithm.gif",
+            "DFS": "Algo Visualiser/resources/Depth-First-Search/Depth-First-Search.gif",
+            # "Dijkstra": "path_to_gif.gif",
+            # "Greedy Best-First": "path_to_gif.gif",
+            # "Bidirectional BFS": "path_to_gif.gif",
+            # "Jump Point Search": "path_to_gif.gif",
+            # "Swarm Intelligence": "path_to_gif.gif"
+        }
 
-    # Draw things to the screen
-    screen.fill(WHITE)  # Fill the screen with white
+        images = {}
+        for algo in algorithms:
+            try:
+                images[algo] = pygame.image.load(image_paths[algo]).convert_alpha()
+                images[algo] = pygame.transform.scale(images[algo], (300, 200))
+                screen.blit(images[algo], (350, 220))
+                pygame.display.update()
+            except KeyError:
+                print(f"No image found for {algo}")
 
-    # Draw the tabs
-    for i in range(num_tabs):
-        if i == active_tab_index:
-            pygame.draw.rect(screen, BLUE, (i * TAB_WIDTH, 0, TAB_WIDTH, TAB_HEIGHT))
-        else:
-            pygame.draw.rect(screen, GRAY, (i * TAB_WIDTH, 0, TAB_WIDTH, TAB_HEIGHT))
-        tab_title = font.render(tab_titles[i], True, BLACK)
-        screen.blit(tab_title, (i * TAB_WIDTH + 10, 10))
+        gifs = {}
+        for algo in algorithms:
+            try:
+                if algo in gif_paths:
+                    gifs[algo] = pygame.image.load(gif_paths[algo]).convert_alpha()
+                    gifs[algo] = pygame.transform.scale(gifs[algo], (300, 200))
+                    screen.blit(gifs[algo], (350, 440))
+                    pygame.display.update()
+            except KeyError:
+                print(f"No gif found for {algo}")
 
-    # Draw the active tab text
-    active_tab_lines = tab_text[active_tab_index].split("\n")
-    active_tab_text = []
-    for line in active_tab_lines:
-        if font.size(line)[0] > width - 20:
-            words = line.split(" ")
-            new_line = ""
-            for word in words:
-                if font.size(new_line + " " + word)[0] < width - 20:
-                    new_line += " " + word
-                else:
-                    active_tab_text.append(new_line.strip())
-                    new_line = word
-            active_tab_text.append(new_line.strip())
-        else:
-            active_tab_text.append(line)
-    if len(active_tab_text_lines) > max_lines:
-            active_tab_text_lines = active_tab_text_lines[:max_lines]
-            active_tab_text_lines[-1] = active_tab_text_lines[-1][:-3] + "..."
-    active_tab_text = "\n".join(active_tab_text_lines)
-    active_tab_text_surf = font.render(active_tab_text, True, BLACK)
-    active_tab_text_rect = active_tab_text_surf.get_rect()
-    active_tab_text_rect.x = 10
-    active_tab_text_rect.y = TAB_HEIGHT + 10
-    screen.blit(active_tab_text_surf, active_tab_text_rect)
+    # Hide the container if it's not the first algorithm
+    for algo in algorithms[1:]:
+        containers[algo].hide()
 
-    # Update the screen
-    pygame.display.flip()
+    running = True
+    while running:
+        time_delta = clock.tick(60) / 1000.0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.VIDEORESIZE:
+                screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+                manager.resize_ui(event.w, event.h)
+            if event.type == pygame.USEREVENT:
+                if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                    for algo in algorithms:
+                        if event.ui_element == buttons[algo]:
+                            containers[algo].show()
+                            screen.fill((0, 0, 0))  # Clear the screen
+                            manager.draw_ui(screen)  # Draw UI elements
+                            pygame.display.update()  # Update the display
+                        else:
+                            containers[algo].hide()
 
-# Quit Pygame
-pygame.quit()
+            manager.process_events(event)
+
+        manager.update(time_delta)
+        manager.draw_ui(screen)
+        pygame.display.update()
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    open_help_window()
