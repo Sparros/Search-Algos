@@ -3,6 +3,7 @@ import random
 from queue import PriorityQueue
 from threading import Thread
 from multiprocessing import Process
+from queue import Queue
 
 import Node
 import Algos
@@ -218,20 +219,24 @@ def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
     return start_end_nodes, grid
 
 def run_algorithms_sequentially(grids, start_node, end_node, selected_algorithms):
-    print(f"Sequential - start node: {start_node}, end node: {end_node}")
+    #print(f"Sequential - start node: {start_node}, end node: {end_node}")
+    results = []
     for algo, grid, surface in zip(selected_algorithms, grids, [top_left_surf, top_right_surf, bottom_left_surf, bottom_right_surf]):
         if algo is not None:
-            ALGORITHM_FUNCTIONS[algo](grid, start_node, end_node, (lambda node: node.draw(surface)), update_display)
+            result = ALGORITHM_FUNCTIONS[algo](grid, start_node, end_node, (lambda node: node.draw(surface)), update_display)
+            results.append(result)
+    print(results)
+    return results
 
 def run_algorithms_parallel(grids, start_node, end_node, selected_algorithms):
-    print(f"Parallel - start node: {start_node}, end node: {end_node}")
     surfaces = [top_left_surf, top_right_surf, bottom_left_surf, bottom_right_surf]
     threads = []
-
-    for algo, grid, surface in zip(selected_algorithms, grids, surfaces):
+    results = [None] * len(selected_algorithms)
+    print(selected_algorithms, surfaces)
+    for i, (algo, grid, surface) in enumerate(zip(selected_algorithms, grids, surfaces)):
         if algo is not None:
             draw_function = lambda node, surface=surface: node.draw(surface)
-            thread = Thread(target=ALGORITHM_FUNCTIONS[algo], args=(grid, start_node, end_node, draw_function, update_display))
+            thread = Thread(target=algo_wrapper, args=(ALGORITHM_FUNCTIONS[algo], grid, start_node, end_node, draw_function, update_display, results, i))
             threads.append(thread)
 
     for thread in threads:
@@ -240,6 +245,14 @@ def run_algorithms_parallel(grids, start_node, end_node, selected_algorithms):
     # Wait for all threads to complete
     for thread in threads:
         thread.join()
+
+    print(f"Results: {results}")
+    return results
+
+# wrapper to avoid changing all the algorithm functions for getting results with threading
+def algo_wrapper(algo_function, grid, start, end, draw_func, update_display, results, index):
+    result = algo_function(grid, start, end, draw_func, update_display)
+    results[index] = result
 
 def update_grids(surfaces, grids, rows, width, start_end_nodes):
     if FREE_DRAW_MODE:      
@@ -348,7 +361,7 @@ def main():
             for i, algo in enumerate(selected_algorithms):
                 if algo is None and new_algorithms:
                     selected_algorithms[i] = new_algorithms.pop(0)
-            print(selected_algorithms)
+            #print(selected_algorithms)
 
             if action == "PARALLEL_EVENT":
                 execution_mode = "PARALLEL"
@@ -365,10 +378,11 @@ def main():
                         for node in row:
                             node.update_neighbours(grid)       
                 if execution_mode == "SEQUENTIAL":
-                    run_algorithms_sequentially(grids, start_node, end_node, selected_algorithms)
+                    results = run_algorithms_sequentially(grids, start_node, end_node, selected_algorithms)
                 elif execution_mode == "PARALLEL":
-                    run_algorithms_parallel(grids, start_node, end_node, selected_algorithms)
-            
+                    results = run_algorithms_parallel(grids, start_node, end_node, selected_algorithms)
+                menu.update_table(selected_algorithms, results)
+
             elif action == "ROW_CHANGE_EVENT" and new_rows is not None:
                     ROWS = new_rows
                     top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node = create_and_copy_grids(ROWS, GRID_WIDTH, traffic)

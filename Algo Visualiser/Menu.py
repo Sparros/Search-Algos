@@ -1,5 +1,7 @@
 import pygame_gui
 import pygame
+from queue import Queue
+
 from pygame_gui.core import ObjectID
 
 # Define the algorithm list here
@@ -11,7 +13,10 @@ class Menu:
         self.height = height
         self.manager = pygame_gui.UIManager((width, height), 'Algo Visualiser\\themes.json')
         self.selected_algorithms = set(["A*", "BFS", "DFS", "Dijkstra"])
-
+        self.table_labels = []
+        self.result_labels = []
+        self.create_table(30, 120, self.selected_algorithms)
+        
         button_width = 100
         button_height = 50
         gap = 10
@@ -40,8 +45,6 @@ class Menu:
             object_id=ObjectID(class_id='@button', 
                                object_id='#reset-button')
         )
-
-        self.create_table(30, 120)
 
         self.title_label = pygame_gui.elements.ui_label.UILabel(
                     relative_rect=pygame.Rect((20, 300), (self.width - 40, 24)),
@@ -162,11 +165,22 @@ class Menu:
                                object_id='#help-button')
         )
 
-    def create_table(self, pos_x, pos_y):
+    def create_table(self, pos_x, pos_y, selected_algorithms, results=None):
+        for label in self.table_labels:
+            label.kill()
+        self.table_labels = []
+        
+        # Filter out None values and extract result times
+        #result_times = [res[0] for res in results if res is not None]
+
         column_names = ["Algorithm", "Time"]
-        row_data = [["A*", "BFS", "DFS", "Dijkstra"], [0, 0, 0, 0]]
+        if results is not None:
+            result_times = [res[0] for res in results]
+        else:
+            result_times = [0, 0, 0, 0]
+        row_data = [list(selected_algorithms), result_times]
         pos = (pos_x, pos_y)
-        cell_size = (100, 30)	
+        cell_size = (100, 30) 
         
         num_columns = len(column_names)
         num_rows = len(row_data[0])
@@ -178,15 +192,24 @@ class Menu:
                 text=column_name,
                 manager=self.manager
             )
+            self.table_labels.append(header_label)
 
         # Create rows
         for i in range(num_rows):
             for j in range(num_columns):
+                if j == 0:
+                    text = str(row_data[j][i])
+                else:
+                    try:
+                        text = str(round(row_data[j][i], 3))
+                    except IndexError:
+                        text = "N/A"
                 cell_label = pygame_gui.elements.ui_label.UILabel(
                     relative_rect=pygame.Rect((pos[0] + j * cell_size[0], pos[1] + (i + 1) * cell_size[1]), cell_size),
-                    text=str(row_data[j][i]),
+                    text=text,
                     manager=self.manager
                 )
+                self.table_labels.append(cell_label)
 
     def handle_event(self, event):
         # Handle GUI events
@@ -248,6 +271,9 @@ class Menu:
                         checkbox.checked = algo_name in self.selected_algorithms
                         checkbox.set_text(f"[{'X' if algo_name in self.selected_algorithms else ' '}] {algo_name}")
 
+                    # Update the table with the new selected algorithms
+                    self.update_table(self.selected_algorithms)
+
             if event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
                     #if event.ui_element == self.row_drop_menu:
                     rows = int(event.text)  
@@ -263,3 +289,7 @@ class Menu:
         # Draw the menu to a surface
         surface.fill((29,34,40,255))
         self.manager.draw_ui(surface)
+    
+    def update_table(self, selected_algorithms, results=None):
+        self.create_table(30, 120, selected_algorithms, results)
+    

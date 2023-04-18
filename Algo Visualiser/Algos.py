@@ -2,6 +2,7 @@ import pygame
 from queue import PriorityQueue, Queue
 from collections import deque
 import heapq
+import time
 from Node import Node
 
 TRAFFIC_COST = 2
@@ -17,15 +18,22 @@ def h(p1, p2):
     x2, y2 = p2
     return abs(x1 - x2) + abs(y1 - y2)
 
-def reconstruct_path(came_from, current, node_draw_func):
-    print("Reconstructing path")
-    while current in came_from:
-        current = came_from[current]
+def reconstruct_path(came_from, end, node_draw_func):
+    path = []
+    current = end
+    while current is not None:
+        path.append(current)
+        current = came_from.get(current)
         if current is not None:
-            current.make_path() 
+            current.make_path()
             node_draw_func(current)
+    path.reverse()
+    return path
 
 def A_star(grid, start, end, node_draw_func, update_display_func):
+    # Start timer
+    start_time = time.time()
+
     print("A_star called")
     count = 0
     open_set = PriorityQueue()
@@ -54,8 +62,21 @@ def A_star(grid, start, end, node_draw_func, update_display_func):
         if current == end:
             reconstruct_path(came_from, end, node_draw_func)
             end.make_end()
-            return True
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            path.reverse()
 
+            # Calculate the path length
+            path_length = len(path) - 1
+
+            # Calculate the time taken
+            time_taken = time.time() - start_time
+
+            return (time_taken, path_length)
+        
         for neighbour in current.neighbours:
             #print(f"Neighbour: {neighbour.get_pos()}")
             temp_g_score = g_score[current] + 1
@@ -83,9 +104,10 @@ def A_star(grid, start, end, node_draw_func, update_display_func):
             node_draw_func(current)
             update_display_func()   
 
-    return False
+    return None, None, None
 
 def DFS(grid, start, end, node_draw_func, update_display_func):
+    start_time = time.time()
     stack = [start]
     visited = set()
     came_from = {}
@@ -101,9 +123,10 @@ def DFS(grid, start, end, node_draw_func, update_display_func):
 
             if current == end:
                 #print(came_from)
-                reconstruct_path(came_from, end, node_draw_func)  # If you want to reconstruct the path, you can implement this.
-                end.make_end()
-                return True
+                path = reconstruct_path(came_from, end, node_draw_func)
+                path_length = len(path) - 1
+                time_taken = time.time() - start_time
+                return (time_taken, path_length)
 
             for neighbour in current.neighbours:
                 if neighbour not in visited and not neighbour.is_barrier():
@@ -118,9 +141,10 @@ def DFS(grid, start, end, node_draw_func, update_display_func):
                 node_draw_func(current)
                 update_display_func()
 
-    return False
+    return None, None, None
 
 def BFS(grid, start, end, node_draw_func, update_display_func):
+    start_time = time.time()
     visited = set()
     queue = Queue()
     queue.put(start)
@@ -133,7 +157,10 @@ def BFS(grid, start, end, node_draw_func, update_display_func):
         if current == end:
             reconstruct_path(came_from, end, node_draw_func)
             end.make_end()
-            return True
+            path = reconstruct_path(came_from, end, node_draw_func)
+            path_length = len(path) - 1
+            time_taken = time.time() - start_time
+            return (time_taken, path_length)
 
         for neighbour in current.neighbours:
             if neighbour not in visited:
@@ -149,9 +176,10 @@ def BFS(grid, start, end, node_draw_func, update_display_func):
             node_draw_func(current)
             update_display_func()
 
-    return False
+    return None, None, None
 
 def dijkstra(grid, start, end, node_draw_func, update_display_func):
+    start_time = time.time()
     pq = []
     heapq.heappush(pq, (0, start))
     came_from = dict()
@@ -172,10 +200,13 @@ def dijkstra(grid, start, end, node_draw_func, update_display_func):
             visited.add(current)
 
             if current == end:
-                if end in came_from:
-                    reconstruct_path(came_from, end, node_draw_func)
+                if end not in came_from:
+                        return False
+                path = reconstruct_path(came_from, end, node_draw_func)
+                path_length = len(path) - 1
+                time_taken = time.time() - start_time
                 end.make_end()
-                return True
+                return (time_taken, path_length)
 
             for neighbour in current.neighbours:
                 temp_distance = current.distance + 1
@@ -195,6 +226,7 @@ def dijkstra(grid, start, end, node_draw_func, update_display_func):
     return False
 
 def greedy_best_first(grid, start, end, node_draw_func, update_display_func):
+    start_time = time.time()
     print("Greedy Best-First called")
     open_set = PriorityQueue()
     open_set.put((h(start.get_pos(), end.get_pos()), start))
@@ -209,9 +241,11 @@ def greedy_best_first(grid, start, end, node_draw_func, update_display_func):
         current = open_set.get()[1]
 
         if current == end:
-            reconstruct_path(came_from, end, node_draw_func)
+            path =reconstruct_path(came_from, end, node_draw_func)
             end.make_end()
-            return True
+            path_length = len(path) - 1
+            time_taken = time.time() - start_time
+            return (time_taken, path_length)
 
         visited.add(current)
 
@@ -231,6 +265,7 @@ def greedy_best_first(grid, start, end, node_draw_func, update_display_func):
     return False
 
 def bidirectional_bfs(grid, start, end, node_draw_func, update_display_func):
+    start_time = time.time()
     print("Bidirectional BFS called")
     start_queue = deque([start])
     end_queue = deque([end])
@@ -247,45 +282,32 @@ def bidirectional_bfs(grid, start, end, node_draw_func, update_display_func):
         current_start = start_queue.popleft()
         current_end = end_queue.popleft()
 
-        if current_start in end_visited:
+        if current_start in end_visited or current_end in start_visited:
             path = []
-            path.append(current_start)
-            while came_from_start[current_start]:
-                current_start = came_from_start[current_start]
-                path.append(current_start)
 
-            path = path[::-1]
-            while came_from_end[current_end]:
-                current_end = came_from_end[current_end]
-                path.append(current_end)
+            if current_start in end_visited:
+                meet_point = current_start
+            else:
+                meet_point = current_end
 
-            reconstruct_path({}, path[-1], node_draw_func)
-            for i in range(len(path) - 1):
-                reconstruct_path({}, path[i], node_draw_func)
+            if meet_point in came_from_start and meet_point in came_from_end:
+                while came_from_start[meet_point]:
+                    meet_point = came_from_start[meet_point]
+                    path.append(meet_point)
+                path = path[::-1]
+                while came_from_end[meet_point]:
+                    meet_point = came_from_end[meet_point]
+                    path.append(meet_point)
+
+                for node in path:
+                    node.make_path()
+                    node_draw_func(node)
                 update_display_func()
-                node_draw_func(path[i])
-            end.make_end()
-            return True
+                end.make_end()
 
-        if current_end in start_visited:
-            path = []
-            path.append(current_end)
-            while came_from_end[current_end]:
-                current_end = came_from_end[current_end]
-                path.append(current_end)
-
-            path = path[::-1]
-            while came_from_start[current_start]:
-                current_start = came_from_start[current_start]
-                path.append(current_start)
-
-            reconstruct_path({}, path[-1], node_draw_func)
-            for i in range(len(path) - 1):
-                reconstruct_path({}, path[i], node_draw_func)
-                update_display_func()
-                node_draw_func(path[i])
-            end.make_end()
-            return True
+                path_length = len(path) - 1
+                time_taken = time.time() - start_time
+                return (time_taken, path_length)
 
         for neighbour in current_start.neighbours:
             if neighbour not in start_visited and not neighbour.is_barrier():
