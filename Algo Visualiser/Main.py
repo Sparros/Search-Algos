@@ -28,6 +28,10 @@ ALGORITHM_FUNCTIONS = {
     "DFS": Algos.DFS,
     "BFS": Algos.BFS,
     "Dijkstra": Algos.dijkstra,
+    "Greedy Best-First": Algos.greedy_best_first,
+    "Bidirectional BFS": Algos.bidirectional_bfs,
+    "Jump Point Search": Algos.jps,
+    #"Bellman-Ford": Algos.bellman_ford,
 }
 
 WIN = pygame.display.set_mode((MENU_WIDTH + WIDTH, HEIGHT))
@@ -140,12 +144,12 @@ def copy_grid(source_grid):
 # Create the title surface to go above the grid
 def create_title_surface(algorithm_name):
     title_surface = pygame.Surface((GRID_WIDTH, FONT_SIZE))
-    title_surface.fill(255, 255, 255)
+    title_surface.fill((255, 255, 255))
     title_font = pygame.font.SysFont("Arial", FONT_SIZE)
-    title_text = title_font.render(f"{algorithm_name} Search", 1, (0, 0, 0))
-    title_surface.blit(title_text, (0, 0))
+    if algorithm_name is not None:
+        title_text = title_font.render(f"{algorithm_name} Search", 1, (0, 0, 0))
+        title_surface.blit(title_text, (0, 0))
     return title_surface
-
 
 # Draw the grid lines between the nodes
 def draw_grid_lines(surface, rows, width):
@@ -211,22 +215,29 @@ def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
             end = None
             start_end_nodes = (start, end)
 
-    return start_end_nodes
+    return start_end_nodes, grid
 
 def run_algorithms_sequentially(grids, start_node, end_node, selected_algorithms):
     print(f"Sequential - start node: {start_node}, end node: {end_node}")
-    for i, algo_name in enumerate(selected_algorithms):
-        ALGORITHM_FUNCTIONS[algo_name](grids[i], start_node, end_node, (lambda node: node.draw(surfaces[i])), update_display)
+    for algo, grid, surface in zip(selected_algorithms, grids, [top_left_surf, top_right_surf, bottom_left_surf, bottom_right_surf]):
+        if algo is not None:
+            ALGORITHM_FUNCTIONS[algo](grid, start_node, end_node, (lambda node: node.draw(surface)), update_display)
 
 def run_algorithms_parallel(grids, start_node, end_node, selected_algorithms):
     print(f"Parallel - start node: {start_node}, end node: {end_node}")
+    surfaces = [top_left_surf, top_right_surf, bottom_left_surf, bottom_right_surf]
     threads = []
 
-    for i, algo_name in enumerate(selected_algorithms):
-        thread = Thread(target=ALGORITHM_FUNCTIONS[algo_name], args=(grids[i], start_node, end_node, (lambda node: node.draw(surfaces[i])), update_display))
-        threads.append(thread)
+    for algo, grid, surface in zip(selected_algorithms, grids, surfaces):
+        if algo is not None:
+            draw_function = lambda node, surface=surface: node.draw(surface)
+            thread = Thread(target=ALGORITHM_FUNCTIONS[algo], args=(grid, start_node, end_node, draw_function, update_display))
+            threads.append(thread)
+
+    for thread in threads:
         thread.start()
 
+    # Wait for all threads to complete
     for thread in threads:
         thread.join()
 
@@ -243,27 +254,38 @@ def update_grids(surfaces, grids, rows, width, start_end_nodes):
     return start_node, end_node
 
 def create_app(selected_algorithms):
-    surfaces = []
     titles = []
+    surfaces = []
 
+    # Create title surfaces for selected algorithms
     for algo in selected_algorithms:
-        titles.append(create_title_surface(algo))
+        if algo is not None:
+            titles.append(create_title_surface(algo))
+        else:
+            empty_title = pygame.Surface((GRID_WIDTH, FONT_SIZE))
+            empty_title.fill((255, 255, 255))
+            titles.append(empty_title)
 
-    # Blit the grid titles onto the window
-    for i, title in enumerate(titles):
-        x_offset = (i % 2) * (GRID_WIDTH + PADDING * 3)
-        y_offset = (i // 2) * (GRID_HEIGHT + PADDING * 2 + FONT_SIZE)
-        GRID_SCREEN.blit(title, (PADDING + x_offset, PADDING + y_offset))
-        GRID_SCREEN.blit(surfaces[i], (PADDING + x_offset, PADDING + FONT_SIZE + y_offset))
-    for algo in selected_algorithms:
-        titles.append(create_title_surface(algo))
+    positions = [
+        (PADDING, PADDING),
+        (GRID_WIDTH + PADDING * 3, PADDING),
+        (PADDING, GRID_HEIGHT + PADDING * 2 + FONT_SIZE),
+        (GRID_WIDTH + PADDING * 3, GRID_HEIGHT + PADDING * 2 + FONT_SIZE),
+    ]
 
+    # Assign title surfaces to their positions
+    for title, pos in zip(titles, positions):
+        surfaces.append((title, pos))
+
+    # Blit the title surfaces onto the window
+    for surface, pos in surfaces:
+        GRID_SCREEN.blit(surface, pos)
+    # Blit the title surfaces onto the window
+    for surface, pos in surfaces:
+        GRID_SCREEN.blit(surface, pos)
+    
     # Blit the grid surfaces onto the window
-    GRID_SCREEN.blit(top_left_surf, (PADDING, PADDING + FONT_SIZE))
-    GRID_SCREEN.blit(top_right_surf, (GRID_WIDTH + PADDING * 3, PADDING + FONT_SIZE))
-    GRID_SCREEN.blit(bottom_left_surf, (PADDING, GRID_HEIGHT + PADDING * 2 + FONT_SIZE * 2))
-    GRID_SCREEN.blit(bottom_right_surf, (GRID_WIDTH + PADDING * 3, GRID_HEIGHT + PADDING * 2 + FONT_SIZE * 2))
-    WIN.blit(GRID_SCREEN, (MENU_WIDTH, 0))
+    update_display()
 
     # Draw the menu
     WIN.blit(MENU, (0, 0))
@@ -281,6 +303,10 @@ def update_display():
     # Update the display
     pygame.display.flip()
 
+def clear_grid(grid):
+    for row in grid:
+        for node in row:
+            node.reset()
 
 def main():  
     global FREE_DRAW_MODE
@@ -289,7 +315,7 @@ def main():
     start_end_nodes = (None, None)
     traffic = False
     global ROWS
-    selected_algorithms = ["A*", "Dijkstra", "BFS", "DFS"]
+    selected_algorithms = ["A*", "DFS", "BFS", "Dijkstra"]
 
     # initialise grids
     top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node = create_and_copy_grids(ROWS, GRID_WIDTH, traffic)
@@ -302,20 +328,28 @@ def main():
         if grid_needs_update:
             start_node, end_node = update_grids(surfaces, grids, ROWS, GRID_WIDTH, start_end_nodes)
             grid_needs_update = False
-        # if grid_needs_update: # if maze change or grid size change
-        #     print("Updating grids")
-        #     update_grids(surfaces, grids, ROWS, GRID_WIDTH)
-        #     grid_needs_update = False
-        #     start_node, end_node = set_start_end(top_left_grid, 1, 1, ROWS - 2, ROWS - 2)
-
-        # if FREE_DRAW_MODE:
-        #     start_end_nodes = free_draw(top_left_surf, top_left_grid, ROWS, GRID_WIDTH, start_end_nodes, PADDING + MENU_WIDTH, PADDING + FONT_SIZE)
-        #     #update_grids(surfaces, grids, ROWS, GRID_WIDTH)
+ 
+        if FREE_DRAW_MODE:
+            for grid in grids:
+                clear_grid(grid)
+            start_node, end_node = update_grids(surfaces, grids, ROWS, GRID_WIDTH, start_end_nodes)
 
         # Handle events
         for event in pygame.event.get():
-            action, traffic, new_rows, selected_algorithms = menu.handle_event(event)
+            action, traffic, new_rows, updated_algorithms = menu.handle_event(event)
+
+            # Remove unselected algorithms
+            for i, algo in enumerate(selected_algorithms):
+                if algo not in updated_algorithms:
+                    selected_algorithms[i] = None
+
+            # Add new algorithms
+            new_algorithms = [algo for algo in updated_algorithms if algo not in selected_algorithms]
+            for i, algo in enumerate(selected_algorithms):
+                if algo is None and new_algorithms:
+                    selected_algorithms[i] = new_algorithms.pop(0)
             print(selected_algorithms)
+
             if action == "PARALLEL_EVENT":
                 execution_mode = "PARALLEL"
             elif action == "SEQUENTIAL_EVENT":
@@ -350,15 +384,14 @@ def main():
                 grid_needs_update = True
 
             elif action == "FREE_DRAW_EVENT":
-                FREE_DRAW_MODE = True
-                if FREE_DRAW_MODE:
-                    for grid in grids:
-                        for row in grid: 
-                            for node in row:
-                                node.reset()
-            
+                if not FREE_DRAW_MODE:
+                    FREE_DRAW_MODE = True
+                else:
+                    FREE_DRAW_MODE = False
+
             elif action == "HELP_EVENT":
-                # run help window on own thread so both windows can be open at the same time
+                # run help window on own process so both windows can be open at the same time
+                # process instead of thread because of pygame issues 
                 help_process = Process(target=open_help_window)
                 help_process.start()
 

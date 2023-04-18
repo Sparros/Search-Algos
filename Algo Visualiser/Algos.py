@@ -4,7 +4,7 @@ from collections import deque
 import heapq
 from Node import Node
 
-TRAFFIC_COST = 5
+TRAFFIC_COST = 2
 
 def get_cost(node1, node2):
     if node1.is_traffic() or node2.is_traffic():
@@ -420,48 +420,48 @@ def jump(node, parent, end, grid):
 
     return None
 
-def bellman_ford(grid, start, end, node_draw_func, update_display_func):
-    print("Bellman-Ford called")
-    came_from = {}
-    dist = {}
-    for row in grid:
-        for node in row:
-            if isinstance(node, Node):
-                dist[node] = float("inf")
-    dist[start] = 0
+# def bellman_ford(grid, start, end, node_draw_func, update_display_func):
+#     print("Bellman-Ford called")
+#     came_from = {}
+#     dist = {}
+#     for row in grid:
+#         for node in row:
+#             if isinstance(node, Node):
+#                 dist[node] = float("inf")
+#     dist[start] = 0
     
-    for i in range(len(grid) * len(grid)):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
+#     for i in range(len(grid) * len(grid)):
+#         for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                 pygame.quit()
         
-        for row in grid:
-            for node in row:
-                if isinstance(node, Node):
-                    for neighbour in node.neighbours:
-                        if not neighbour.is_barrier():
-                            if neighbour.is_traffic():
-                                cost = 2
-                            else:
-                                cost = 1
-                            if dist[node] + cost < dist[neighbour]:
-                                dist[neighbour] = dist[node] + cost
-                                came_from[neighbour] = node
-                                neighbour.make_open()
-                                node_draw_func(neighbour)
-                                update_display_func()
-                                if neighbour == end:
-                                    reconstruct_path(came_from, end, node_draw_func)
-                                    end.make_end()
-                                    return True
+#         for row in grid:
+#             for node in row:
+#                 if isinstance(node, Node):
+#                     for neighbour in node.neighbours:
+#                         if not neighbour.is_barrier():
+#                             if neighbour.is_traffic():
+#                                 cost = 2
+#                             else:
+#                                 cost = 1
+#                             if dist[node] + cost < dist[neighbour]:
+#                                 dist[neighbour] = dist[node] + cost
+#                                 came_from[neighbour] = node
+#                                 neighbour.make_open()
+#                                 node_draw_func(neighbour)
+#                                 update_display_func()
+#                                 if neighbour == end:
+#                                     reconstruct_path(came_from, end, node_draw_func)
+#                                     end.make_end()
+#                                     return True
 
-        if i == len(grid) * len(grid) - 1:
-            print("Negative cycle detected")
-            return False
+#         if i == len(grid) * len(grid) - 1:
+#             print("Negative cycle detected")
+#             return False
                                 
-        if current != start:
-            current.make_closed()
-            node_draw_func(current)
-            update_display_func()
+#         if current != start:
+#             current.make_closed()
+#             node_draw_func(current)
+#             update_display_func()
 
-    return False
+#     return False

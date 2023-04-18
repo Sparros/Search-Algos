@@ -15,5 +15,13 @@
         {
             "normal_text": "#FF0000"
         }
+    },
+    "#algo-tabs":
+    {
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "list_item_height": "75"
+        }
     }
 }

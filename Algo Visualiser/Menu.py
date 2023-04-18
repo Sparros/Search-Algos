@@ -3,7 +3,7 @@ import pygame
 from pygame_gui.core import ObjectID
 
 # Define the algorithm list here
-ALGO_LIST = ["A*", "BFS", "DFS", "Dijkstra", "Greedy Best-First", "Bidirectional BFS", "Jump Point Search", "Swarm Intelligence"]
+ALGO_LIST = ["A*", "BFS", "DFS", "Dijkstra", "Greedy Best-First", "Bidirectional BFS", "Jump Point Search", "Bellman-Ford"]
 
 class Menu:
     def __init__(self, width, height):
