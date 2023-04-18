@@ -2,19 +2,26 @@ import os
 import pygame
 import pygame_gui
 from PIL import Image
+from logger import logger
+
 
 def load_gif(path):
-    gif_frames = []
-    gif = Image.open(path)
+    try:
+        gif_frames = []
+        gif = Image.open(path)
 
-    for frame_index in range(gif.n_frames):
-        gif.seek(frame_index)
-        frame_surface = pygame.image.fromstring(
-            gif.tobytes(), gif.size, gif.mode).convert()
-        gif_frames.append(frame_surface)
+        for frame_index in range(gif.n_frames):
+            gif.seek(frame_index)
+            
+            frame_surface = pygame.image.fromstring(
+                gif.tobytes(), gif.size, gif.mode).convert()
+            gif_frames.append(frame_surface)
 
-    return gif_frames
-
+        return gif_frames
+    # Handle error if file is not found, invalid file, or invalid path
+    except (FileNotFoundError, IOError, OSError, ValueError) as e:
+        logger.error(f"Error loading GIF from {path}: {e}")
+        return None
 
 def open_help_window():
     pygame.init()
@@ -49,10 +56,15 @@ def open_help_window():
         manager=manager
     )
 
-    bfs_gif_path = os.path.join("Algo Visualiser", "resources", "Breadth-First-Search-Algorithm", "Breadth-First-Search-Algorithm.gif")
-    bfs_gif_frames = load_gif(bfs_gif_path)
-    dfs_gif_path = os.path.join("Algo Visualiser", "resources", "Depth-First-Search", "Depth-First-Search.gif")
-    dfs_gif_frames = load_gif(dfs_gif_path)
+    try: 
+        bfs_gif_path = os.path.join("Algo Visualiser", "resources", "Breadth-First-Search-Algorithm", "Breadth-First-Search-Algorithm.gif")
+        bfs_gif_frames = load_gif(bfs_gif_path)
+        dfs_gif_path = os.path.join("Algo Visualiser", "resources", "Depth-First-Search", "Depth-First-Search.gif")
+        dfs_gif_frames = load_gif(dfs_gif_path)
+    except TypeError as e:
+        # Handle the error for not being able to load the GIFs
+        logger.error(f"Error loading GIF: {e} for path {bfs_gif_path} or {dfs_gif_path}")
+        return None
 
     # Scale down both GIFs
     scale_factor = 0.8
@@ -123,7 +135,7 @@ def open_help_window():
                 dfs_gif_index = (dfs_gif_index + 1) % len(dfs_gif_frames)
                 dfs_gif_timer = current_time
             screen.blit(dfs_gif_frames[dfs_gif_index], (gif_x, gif_y))
-            
+
         pygame.display.update()
 
     pygame.quit()

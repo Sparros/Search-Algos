@@ -1,0 +1,4 @@
+2023-04-18 23:55:24,650 - my_logger - ERROR - An error occurred: division by zero
+2023-04-19 00:00:42,379 - my_logger - ERROR - Error loading GIF from Algo Vissualiser\resources\Breadth-First-Search-Algorithm\Breadth-First-Search-Algorithm.gif: [Errno 2] No such file or directory: 'Algo Vissualiser\\resources\\Breadth-First-Search-Algorithm\\Breadth-First-Search-Algorithm.gif'
+2023-04-19 00:06:08,461 - my_logger - ERROR - Error loading GIF from Algo Vissualiser\resources\Breadth-First-Search-Algorithm\Breadth-First-Search-Algorithm.gif: [Errno 2] No such file or directory: 'Algo Vissualiser\\resources\\Breadth-First-Search-Algorithm\\Breadth-First-Search-Algorithm.gif'
+2023-04-19 00:09:02,536 - my_logger - ERROR - Error loading GIF from Algo Vissualiser\resources\Breadth-First-Search-Algorithm\Breadth-First-Search-Algorithm.gif: [Errno 2] No such file or directory: 'Algo Vissualiser\\resources\\Breadth-First-Search-Algorithm\\Breadth-First-Search-Algorithm.gif'
