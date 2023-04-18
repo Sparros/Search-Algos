@@ -1,10 +1,12 @@
 import pygame
 import random
 from queue import PriorityQueue
+from threading import Thread
 
 import Node
 import Algos
 import Menu
+import help_window
 from Menu import Menu
 
 # Initialize pygame
@@ -215,7 +217,6 @@ def run_algorithms_sequentially(grids, start_node, end_node):
 def run_algorithms_parallel(grids, start_node, end_node):
     print(f"Parallel - start node: {start_node}, end node: {end_node}")
     # Use threading to run algorithms in parallel
-    from threading import Thread
 
     thread1 = Thread(target=Algos.A_star, args=(grids[0], start_node, end_node, (lambda node: node.draw(top_left_surf)), update_display))
     thread2 = Thread(target=Algos.DFS, args=(grids[1], start_node, end_node, (lambda node: node.draw(top_right_surf)), update_display))
@@ -309,7 +310,8 @@ def main():
 
         # Handle events
         for event in pygame.event.get():
-            action, traffic, new_rows = menu.handle_event(event)
+            action, traffic, new_rows, selected_algorithms = menu.handle_event(event)
+            #print(selected_algorithms)
             if action == "PARALLEL_EVENT":
                 execution_mode = "PARALLEL"
             elif action == "SEQUENTIAL_EVENT":
@@ -350,10 +352,27 @@ def main():
                         for row in grid: 
                             for node in row:
                                 node.reset()
+            
+            elif action == "HELP EVENT":
+                # run help window on own thread so both windows can be open at the same time
+                help_thread = Thread(target=help_window.open_window)
+                help_thread.start()
 
         # Update the menu and display
         menu.update(0.0)
         #pygame.display.update()
+
+def help_window_loop():
+    help_window = help_window.open_window()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                #sys.exit()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return  # close the help window and return to the main loop
+        help_window.update()
+        pygame.display.flip()
 
 if __name__ == "__main__":
     main()
