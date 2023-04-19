@@ -7,7 +7,6 @@ from queue import Queue
 
 import Node
 import Algos
-import Menu
 #import help_window
 from Menu import Menu
 from help_window import open_help_window
@@ -32,7 +31,7 @@ ALGORITHM_FUNCTIONS = {
     "Greedy Best-First": Algos.greedy_best_first,
     "Bidirectional BFS": Algos.bidirectional_bfs,
     "Jump Point Search": Algos.jps,
-    #"Bellman-Ford": Algos.bellman_ford,
+    "Bellman-Ford": Algos.bellman_ford
 }
 
 WIN = pygame.display.set_mode((MENU_WIDTH + WIDTH, HEIGHT))
@@ -185,17 +184,17 @@ def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
 
     if pygame.mouse.get_pressed()[0]:  # LEFT
         pos = pygame.mouse.get_pos()
-        pos = (pos[0] - x_offset, pos[1] - y_offset) 
+        pos = (pos[0] - x_offset, pos[1] - y_offset)
         row, col = get_clicked_pos(pos, rows, width)
-        
+
         if 0 <= row < rows and 0 <= col < rows:
             node = grid[row][col]
-            if not start:
+            if not start and not node.is_barrier() and not node.is_end():
                 start = node
                 start.make_start()
                 start_end_nodes = (start, end)
 
-            elif not end and node != start:
+            elif not end and node != start and not node.is_barrier() and not node.is_start():
                 end = node
                 end.make_end()
                 start_end_nodes = (start, end)
@@ -205,7 +204,7 @@ def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
 
     elif pygame.mouse.get_pressed()[2]:  # RIGHT
         pos = pygame.mouse.get_pos()
-        pos = (pos[0] - x_offset, pos[1] - y_offset) 
+        pos = (pos[0] - x_offset, pos[1] - y_offset)
         row, col = get_clicked_pos(pos, rows, width)
         node = grid[row][col]
         node.reset()
@@ -255,11 +254,14 @@ def algo_wrapper(algo_function, grid, start, end, draw_func, update_display, res
     results[index] = result
 
 def update_grids(surfaces, grids, rows, width, start_end_nodes):
-    if FREE_DRAW_MODE:      
-        start_end_nodes = free_draw(top_left_surf, grids[0], ROWS, GRID_WIDTH, start_end_nodes, PADDING + MENU_WIDTH, PADDING + FONT_SIZE)
-        start_node = start_end_nodes[0]
-        end_node = start_end_nodes[1]
-        return start_node, end_node
+    global FREE_DRAW_MODE
+    if FREE_DRAW_MODE:
+        for grid in grids:
+            clear_grid(grid)
+            for surf, g in zip(surfaces, grids):
+                draw(surf, g, rows, width)
+        start_end_nodes = (None, None)  # Add this line
+        start_node, end_node = start_end_nodes
     else:
         start_node, end_node = set_start_end(grids[0], 1, 1, ROWS - 2, ROWS - 2)
     for surf, grid in zip(surfaces, grids):
@@ -321,6 +323,12 @@ def clear_grid(grid):
         for node in row:
             node.reset()
 
+def reset_grid(grid):
+    for row in grid:
+        for node in row:
+            if not node.is_barrier() and not node.is_start() and not node.is_end():
+                node.reset()
+
 def main():  
     global FREE_DRAW_MODE
     grid_needs_update = True
@@ -343,10 +351,14 @@ def main():
             grid_needs_update = False
  
         if FREE_DRAW_MODE:
-            for grid in grids:
-                clear_grid(grid)
-            start_node, end_node = update_grids(surfaces, grids, ROWS, GRID_WIDTH, start_end_nodes)
-
+            start_end_nodes, grids[0] = free_draw(top_left_surf, grids[0], ROWS, GRID_WIDTH, start_end_nodes, PADDING + MENU_WIDTH, PADDING + FONT_SIZE)
+            start_node = start_end_nodes[0]
+            end_node = start_end_nodes[1]
+            for grid in grids[1:]:
+                for row, source_row in zip(grid, grids[0]):
+                    for node, source_node in zip(row, source_row):
+                        node.update_from(source_node)
+            update_display()
         # Handle events
         for event in pygame.event.get():
             action, traffic, new_rows, updated_algorithms = menu.handle_event(event)
@@ -383,6 +395,12 @@ def main():
                     results = run_algorithms_parallel(grids, start_node, end_node, selected_algorithms)
                 menu.update_table(selected_algorithms, results)
 
+            elif action == "RESET_EVENT":
+                for grid in grids:
+                    reset_grid(grid)
+                start_node, end_node = set_start_end(grids[0], 1, 1, ROWS - 2, ROWS - 2)
+                grid_needs_update = True
+
             elif action == "ROW_CHANGE_EVENT" and new_rows is not None:
                     ROWS = new_rows
                     top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node = create_and_copy_grids(ROWS, GRID_WIDTH, traffic)
@@ -398,10 +416,8 @@ def main():
                 grid_needs_update = True
 
             elif action == "FREE_DRAW_EVENT":
-                if not FREE_DRAW_MODE:
-                    FREE_DRAW_MODE = True
-                else:
-                    FREE_DRAW_MODE = False
+                FREE_DRAW_MODE = not FREE_DRAW_MODE
+                grid_needs_update = True
 
             elif action == "HELP_EVENT":
                 # run help window on own process so both windows can be open at the same time

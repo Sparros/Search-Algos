@@ -23,6 +23,10 @@ class Node:
         self.width = gap
         self.total_rows = total_rows
         self.distance = float("inf")
+        self.parent = None # for JPS algo
+
+    def set_parent(self, parent_node):
+        self.parent = parent_node
 
     def get_pos(self):
         return self.row, self.col
@@ -90,5 +94,54 @@ class Node:
             self.neighbours.append(grid[self.row][self.col - 1])
             #print(f"LEFT neighbor added: {grid[self.row][self.col - 1].get_pos()}")
 
+    def get_all_neighbours(self, grid):
+        self.update_neighbours(grid)
+        return self.neighbours
+    
+    def get_neighbours_with_parent(self, grid):
+        if self.parent is None:
+            return []
+
+        px, py = self.parent.get_pos()
+        x, y = self.get_pos()
+        dx = x - px
+        dy = y - py
+        neighbours = []
+
+        if abs(dx) == abs(dy):  # Diagonal movement
+            if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier():  # DOWN
+                neighbours.append(grid[self.row + 1][self.col])
+            if self.row > 0 and not grid[self.row - 1][self.col].is_barrier():  # UP
+                neighbours.append(grid[self.row - 1][self.col])
+            if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier():  # RIGHT
+                neighbours.append(grid[self.row][self.col + 1])
+            if self.col > 0 and not grid[self.row][self.col - 1].is_barrier():  # LEFT
+                neighbours.append(grid[self.row][self.col - 1])
+        else:  # Straight movement
+            if dx != 0:  # Horizontal movement
+                if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier():  # DOWN
+                    neighbours.append(grid[self.row + 1][self.col])
+                if self.row > 0 and not grid[self.row - 1][self.col].is_barrier():  # UP
+                    neighbours.append(grid[self.row - 1][self.col])
+            elif dy != 0:  # Vertical movement
+                if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier():  # RIGHT
+                    neighbours.append(grid[self.row][self.col + 1])
+                if self.col > 0 and not grid[self.row][self.col - 1].is_barrier():  # LEFT
+                    neighbours.append(grid[self.row][self.col - 1])
+
+        return neighbours
+    
+    def update_from(self, source_node):
+        if source_node.is_barrier():
+            self.make_barrier()
+        elif source_node.is_start():
+            self.make_start()
+        elif source_node.is_end():
+            self.make_end()
+        elif source_node.is_traffic():
+            self.make_traffic()
+        else:
+            self.reset()
+    
     def __lt__(self, other):
         return False

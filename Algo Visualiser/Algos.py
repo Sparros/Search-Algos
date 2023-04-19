@@ -201,7 +201,7 @@ def dijkstra(grid, start, end, node_draw_func, update_display_func):
 
             if current == end:
                 if end not in came_from:
-                        return False
+                        return (None, None)
                 path = reconstruct_path(came_from, end, node_draw_func)
                 path_length = len(path) - 1
                 time_taken = time.time() - start_time
@@ -223,7 +223,7 @@ def dijkstra(grid, start, end, node_draw_func, update_display_func):
                 node_draw_func(current)
                 update_display_func()
 
-    return False
+    return (None, None)
 
 def greedy_best_first(grid, start, end, node_draw_func, update_display_func):
     start_time = time.time()
@@ -262,7 +262,7 @@ def greedy_best_first(grid, start, end, node_draw_func, update_display_func):
             node_draw_func(current)
             update_display_func()
 
-    return False
+    return (None, None)
 
 def bidirectional_bfs(grid, start, end, node_draw_func, update_display_func):
     start_time = time.time()
@@ -282,33 +282,6 @@ def bidirectional_bfs(grid, start, end, node_draw_func, update_display_func):
         current_start = start_queue.popleft()
         current_end = end_queue.popleft()
 
-        if current_start in end_visited or current_end in start_visited:
-            path = []
-
-            if current_start in end_visited:
-                meet_point = current_start
-            else:
-                meet_point = current_end
-
-            if meet_point in came_from_start and meet_point in came_from_end:
-                while came_from_start[meet_point]:
-                    meet_point = came_from_start[meet_point]
-                    path.append(meet_point)
-                path = path[::-1]
-                while came_from_end[meet_point]:
-                    meet_point = came_from_end[meet_point]
-                    path.append(meet_point)
-
-                for node in path:
-                    node.make_path()
-                    node_draw_func(node)
-                update_display_func()
-                end.make_end()
-
-                path_length = len(path) - 1
-                time_taken = time.time() - start_time
-                return (time_taken, path_length)
-
         for neighbour in current_start.neighbours:
             if neighbour not in start_visited and not neighbour.is_barrier():
                 start_visited.add(neighbour)
@@ -327,6 +300,37 @@ def bidirectional_bfs(grid, start, end, node_draw_func, update_display_func):
                 end_queue.append(neighbour)
                 update_display_func()
 
+        # Check for intersection after updating visited sets
+        intersect_node = None
+        for node in start_visited:
+            if node in end_visited:
+                intersect_node = node
+                break
+
+        if intersect_node is not None:
+            path = []
+            meet_point = intersect_node
+
+            while came_from_start[meet_point]:
+                meet_point = came_from_start[meet_point]
+                path.append(meet_point)
+            path = path[::-1]
+            path.append(intersect_node)
+            meet_point = intersect_node
+            while came_from_end[meet_point]:
+                meet_point = came_from_end[meet_point]
+                path.append(meet_point)
+
+            for node in path:
+                node.make_path()
+                node_draw_func(node)
+            update_display_func()
+            end.make_end()
+
+            path_length = len(path) - 1
+            time_taken = time.time() - start_time
+            return (time_taken, path_length)
+
         if current_start != start:
             current_start.make_closed()
             node_draw_func(current_start)
@@ -337,9 +341,10 @@ def bidirectional_bfs(grid, start, end, node_draw_func, update_display_func):
             node_draw_func(current_end)
             update_display_func()
 
-    return False
+    return (None, None)
 
 def jps(grid, start, end, node_draw_func, update_display_func):
+    start_time = time.time()
     print("JPS called")
     start.make_start()
     end.make_end()
@@ -363,26 +368,28 @@ def jps(grid, start, end, node_draw_func, update_display_func):
         if current == end:
             reconstruct_path(came_from, end, node_draw_func)
             end.make_end()
-            return True
+            time_taken = time.time() - start_time
+            return (time_taken, len(came_from))
 
-        neighbors = []
+        neighbours = []
         if current.parent is not None:
-            neighbors = current.get_neighbors_with_parent()
+            neighbours = current.get_neighbours_with_parent(grid)
         else:
-            neighbors = current.get_all_neighbors()
+            neighbours = current.get_all_neighbours(grid)
 
-        for neighbor in neighbors:
+        for neighbor in neighbours:
             if neighbor.is_closed() or neighbor.is_barrier():
                 continue
 
-            jump_node = jump(neighbor, current, end, grid)
-            if jump_node is None:
+            jump_node = jump(neighbor, current, end, grid, came_from)
+            if jump_node is None or jump_node is True:
                 continue
 
-            if jump_node in open_set_hash:
+            if jump_node != True and jump_node in open_set_hash:
                 new_g_score = g_score[current] + get_cost(current, jump_node)
                 if new_g_score < g_score[jump_node]:
                     came_from[jump_node] = current
+                    jump_node.set_parent(current) 
                     g_score[jump_node] = new_g_score
                     f_score[jump_node] = new_g_score + h_score[jump_node]
                     open_set.put((f_score[jump_node], jump_node))
@@ -401,89 +408,85 @@ def jps(grid, start, end, node_draw_func, update_display_func):
             node_draw_func(current)
             update_display_func()
 
-    return False
+    return (None, None)
     
-def jump(node, parent, end, grid):
+def jump(node, parent, end, grid, came_from):
+    if not node or node.is_barrier():
+        return None
     if node == end:
-        return node
+        came_from[node] = parent
+        return True
 
     x, y = node.get_pos()
-    px, py = parent.get_pos()
-
-    dx = x - px
-    dy = y - py
+    dx = x - parent.row
+    dy = y - parent.col
 
     if dx != 0 and dy != 0:
-        if (grid[x - dx][y + dy].is_barrier() and not grid[x - dx][y].is_barrier()) or (
-                grid[x + dx][y - dy].is_barrier() and not grid[x][y - dy].is_barrier()):
+        if (jump(grid[x + dx][y], node, end, grid, came_from) or jump(grid[x][y + dy], node, end, grid, came_from)):
             return node
-
     else:
         if dx != 0:
-            if (grid[x + dx][y + 1].is_barrier() and not grid[x][y + 1].is_barrier()) or (
-                    grid[x + dx][y - 1].is_barrier() and not grid[x][y - 1].is_barrier()):
-                return node
-        else:
-            if (grid[x + 1][y + dy].is_barrier() and not grid[x + 1][y].is_barrier()) or (
-                    grid[x - 1][y + dy].is_barrier() and not grid[x - 1][y].is_barrier()):
-                return node
+            if 0 <= x + dx < len(grid) and 0 <= y + dy < len(grid[0]):
+                if (grid[x + dx][y].is_barrier() and not grid[x][y].is_barrier()) or (
+                    grid[x + dx][y - dy].is_barrier() and not grid[x][y - dy].is_barrier()
+                ):
+                    return node
+        if dy != 0:
+            if 0 <= x + dx < len(grid) and 0 <= y + dy < len(grid[0]):
+                if (grid[x][y + dy].is_barrier() and not grid[x][y].is_barrier()) or (
+                    grid[x - dx][y + dy].is_barrier() and not grid[x - dx][y].is_barrier()
+                ):
+                    return node
 
-    if dx != 0 and dy != 0:
-        if jump(grid[x + dx][y], node, end, grid) or jump(grid[x][y + dy], node, end, grid):
-            return node
-
-    elif dx != 0:
-        if jump(grid[x + dx][y], node, end, grid):
-            return node
-
-    else:
-        if jump(grid[x][y + dy], node, end, grid):
+    if dx != 0 or dy != 0:
+        if jump(grid[x + dx][y + dy], node, end, grid, came_from):
             return node
 
     return None
 
-# def bellman_ford(grid, start, end, node_draw_func, update_display_func):
-#     print("Bellman-Ford called")
-#     came_from = {}
-#     dist = {}
-#     for row in grid:
-#         for node in row:
-#             if isinstance(node, Node):
-#                 dist[node] = float("inf")
-#     dist[start] = 0
+def bellman_ford(grid, start, end, node_draw_func, update_display_func):
+    print("Bellman-Ford called")
+    came_from = {}
+    dist = {}
+    for row in grid:
+        for node in row:
+            if isinstance(node, Node):
+                dist[node] = float("inf")
+    dist[start] = 0
     
-#     for i in range(len(grid) * len(grid)):
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 pygame.quit()
+    for i in range(len(grid) * len(grid)):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
         
-#         for row in grid:
-#             for node in row:
-#                 if isinstance(node, Node):
-#                     for neighbour in node.neighbours:
-#                         if not neighbour.is_barrier():
-#                             if neighbour.is_traffic():
-#                                 cost = 2
-#                             else:
-#                                 cost = 1
-#                             if dist[node] + cost < dist[neighbour]:
-#                                 dist[neighbour] = dist[node] + cost
-#                                 came_from[neighbour] = node
-#                                 neighbour.make_open()
-#                                 node_draw_func(neighbour)
-#                                 update_display_func()
-#                                 if neighbour == end:
-#                                     reconstruct_path(came_from, end, node_draw_func)
-#                                     end.make_end()
-#                                     return True
+        for row in grid:
+            for node in row:
+                if isinstance(node, Node):
+                    current = node # Assign node to current
+                    for neighbour in node.neighbours:
+                        if not neighbour.is_barrier():
+                            if neighbour.is_traffic():
+                                cost = 2
+                            else:
+                                cost = 1
+                            if dist[node] + cost < dist[neighbour]:
+                                dist[neighbour] = dist[node] + cost
+                                came_from[neighbour] = node
+                                neighbour.make_open()
+                                node_draw_func(neighbour)
+                                update_display_func()
+                                if neighbour == end:
+                                    reconstruct_path(came_from, end, node_draw_func)
+                                    end.make_end()
+                                    return True
 
-#         if i == len(grid) * len(grid) - 1:
-#             print("Negative cycle detected")
-#             return False
+        if i == len(grid) * len(grid) - 1:
+            print("Negative cycle detected")
+            return (None, None)
                                 
-#         if current != start:
-#             current.make_closed()
-#             node_draw_func(current)
-#             update_display_func()
+        if current != start:
+            current.make_closed()
+            node_draw_func(current)
+            update_display_func()
 
-#     return False
+    return (None, None)

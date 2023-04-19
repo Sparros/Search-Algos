@@ -38,9 +38,9 @@ class Menu:
             object_id=ObjectID(class_id='@button', 
                                object_id='#start-button')
         )
-        self.restart_button = pygame_gui.elements.UIButton(
+        self.reset_button = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect((self.width // 2 + 5, 50), (button_width, button_height)),
-            text='Restart',
+            text='Reset',
             manager=self.manager,
             object_id=ObjectID(class_id='@button', 
                                object_id='#reset-button')
@@ -169,15 +169,17 @@ class Menu:
         for label in self.table_labels:
             label.kill()
         self.table_labels = []
-        
-        # Filter out None values and extract result times
-        #result_times = [res[0] for res in results if res is not None]
 
         column_names = ["Algorithm", "Time"]
+        
         if results is not None:
-            result_times = [res[0] for res in results]
+            result_times = [None] * len(selected_algorithms)
+            for index, res in enumerate(results):
+                if res is not None:
+                    result_times[index] = res[0]
         else:
             result_times = [0, 0, 0, 0]
+        
         row_data = [list(selected_algorithms), result_times]
         pos = (pos_x, pos_y)
         cell_size = (100, 30) 
@@ -196,14 +198,17 @@ class Menu:
 
         # Create rows
         for i in range(num_rows):
+            # if row_data[0][i] is None:
+            #     continue
             for j in range(num_columns):
                 if j == 0:
                     text = str(row_data[j][i])
                 else:
-                    try:
-                        text = str(round(row_data[j][i], 3))
-                    except IndexError:
+                    if row_data[j][i] is None:
                         text = "N/A"
+                    else:
+                        text = str(round(row_data[j][i], 3))
+
                 cell_label = pygame_gui.elements.ui_label.UILabel(
                     relative_rect=pygame.Rect((pos[0] + j * cell_size[0], pos[1] + (i + 1) * cell_size[1]), cell_size),
                     text=text,
@@ -221,6 +226,8 @@ class Menu:
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:			
                 if event.ui_element == self.start_button:                 
                     action = "START_EVENT"
+                elif event.ui_element == self.reset_button:
+                    action = "RESET_EVENT"
                 elif event.ui_element == self.sequential_checkbox:
                     if not self.sequential_checkbox.checked:
                         self.sequential_checkbox.checked = True
