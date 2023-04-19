@@ -65,7 +65,7 @@ def open_help_window():
         # Handle the error for not being able to load the GIFs
         logger.error(f"Error loading GIF: {e} for path {bfs_gif_path} or {dfs_gif_path}")
         return None
-
+ 
     # Scale down both GIFs
     scale_factor = 0.8
     bfs_gif_frames = [pygame.transform.scale(frame, (int(frame.get_width() * scale_factor), int(frame.get_height() * scale_factor))) for frame in bfs_gif_frames]
