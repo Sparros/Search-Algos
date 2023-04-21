@@ -18,7 +18,7 @@ class Node:
         self.col = col
         self.x = row * gap
         self.y = col * gap
-        self.color = WHITE
+        self.colour = WHITE
         self.neighbours = []
         self.width = gap
         self.total_rows = total_rows
@@ -32,52 +32,58 @@ class Node:
         return self.row, self.col
     
     def is_empty(self):
-        return self.color == WHITE and not self.is_start() and not self.is_end()
+        return self.colour == WHITE and not self.is_start() and not self.is_end()
 
     def is_closed(self):
-        return self.color == RED
+        return self.colour == RED
 
     def is_open(self):
-        return self.color == GREEN
+        return self.colour == GREEN
 
     def is_barrier(self):
-        return self.color == BLACK
+        return self.colour == BLACK
 
     def is_start(self):
-        return self.color == ORANGE
+        return self.colour == ORANGE
 
     def is_end(self):
-        return self.color == TURQUOISE
+        return self.colour == TURQUOISE
     
     def is_traffic(self):
-        return self.color == YELLOW
+        return self.colour == YELLOW
 
     def reset(self):
-        self.color = WHITE
+        self.colour = WHITE
 
     def make_start(self):
-        self.color = ORANGE
+        self.colour = ORANGE
 
     def make_closed(self):
-        self.color = RED
+        self.colour = RED
 
     def make_open(self):
-        self.color = GREEN
+        self.colour = GREEN
 
     def make_barrier(self):
-        self.color = BLACK
+        self.colour = BLACK
 
     def make_end(self):
-        self.color = TURQUOISE
+        self.colour = TURQUOISE
 
     def make_path(self):
-        self.color = PURPLE
+        self.colour = PURPLE
 
     def make_traffic(self):
-        self.color = YELLOW
+        self.colour = YELLOW
+    
+    def is_same_state(self, other):
+        return self.colour == other.colour
 
     def draw(self, win, offset_x=0, offset_y=0):
-        pygame.draw.rect(win, self.color, pygame.Rect(self.x + offset_x, self.y + offset_y, self.width + 1, self.width + 1))
+        pygame.draw.rect(win, self.colour, pygame.Rect(self.x + offset_x, self.y + offset_y, self.width + 1, self.width + 1))
+
+        # Always draw grid lines
+        #pygame.draw.rect(win, GREY, (self.x, self.y, self.width, self.width), 1)
 
     def update_neighbours(self, grid):
         self.neighbours = []

@@ -3,8 +3,9 @@ import pygame
 import pygame_gui
 from PIL import Image
 from logger import logger
+import sys
 
-
+# Function to load a GIF file and return a list of its frames as Pygame surfaces
 def load_gif(path):
     try:
         gif_frames = []
@@ -23,7 +24,9 @@ def load_gif(path):
         logger.error(f"Error loading GIF from {path}: {e}")
         return None
 
+# Function to open the help window and display the algorithm information
 def open_help_window():
+    # Initialize Pygame and set up the help window
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Help")
@@ -31,6 +34,7 @@ def open_help_window():
     manager = pygame_gui.UIManager((800, 600), 'Algo Visualiser\\themes.json')
 
     algorithms = {
+        "Application overview": "Algo Visualiser is a Python application that visualises pathfinding algorithms.The user can choose from a selection of algorithms and grid sizes.",
         "A*": "A* is a heuristic search algorithm that finds the shortest path between a start node and an end node. It uses a combination of the actual distance from the start node and an estimated distance to the end node (the heuristic) to decide which node to explore next. A* guarantees that it will find the shortest path if the heuristic is admissible (never overestimates the actual distance) and consistent (satisfies the triangle inequality).",
         "BFS": "Breadth-first search (BFS) is a graph traversal algorithm that explores all the vertices of a graph in breadthward motion. Starting from the source vertex, it explores all the vertices at the current depth before moving on to the vertices at the next depth. BFS is guaranteed to find the shortest path in an unweighted graph.",
         "DFS": "Depth-first search (DFS) is a graph traversal algorithm that explores as far as possible along each branch before backtracking. Starting from the source vertex, it explores one branch until it reaches the end, then backtracks and explores another branch. DFS is not guaranteed to find the shortest path and can get stuck in infinite loops if the graph has cycles.",
@@ -41,6 +45,7 @@ def open_help_window():
         "Bellman-Ford": "Bellman-Ford algorithm is a single-source shortest path algorithm that finds the shortest path from a source node to all other nodes in a weighted graph. It works by first initializing the distance of the source node to itself as 0, and the distance to all other nodes as infinity. Then, it relaxes each edge in the graph n-1 times, where n is the total number of nodes in the graph. During each iteration, it considers all edges in the graph and updates the distance of each adjacent node if the distance through the current node is shorter than its current distance.\nThe algorithm uses a dynamic programming approach and iteratively improves the estimates of the shortest path until they converge to the optimal solution. In each iteration, the algorithm examines all edges in the graph and updates the distance to each node based on the minimum distance to its adjacent nodes. The key idea of the algorithm is the relaxation process, which involves checking whether the distance to a node can be improved by considering a path through a neighboring node.\nThe algorithm detects negative cycles in the graph by performing one additional iteration of the relaxation process. If any node's distance is updated during this iteration, it indicates that there exists a negative cycle in the graph. A negative cycle is a cycle in the graph whose total weight is negative, and it causes the algorithm to fail because it can lead to an infinitely decreasing distance.\nBellman-Ford algorithm has a time complexity of O(VE), where V is the number of nodes and E is the number of edges in the graph. This makes it less efficient than Dijkstra's algorithm, which has a time complexity of O((E+V)log V) for a binary heap implementation. However, unlike Dijkstra's algorithm, Bellman-Ford algorithm can handle graphs with negative edge weights."
     }
 
+    # Create the UI elements for the algorithm selection list and information text box
     # Create a selection list for the algorithm tabs
     algo_list = pygame_gui.elements.UISelectionList(
         relative_rect=pygame.Rect(0, 0, 200, 600),
@@ -56,6 +61,7 @@ def open_help_window():
         manager=manager
     )
 
+    # Load the BFS and DFS GIFs and handle the error if the loading fails
     try: 
         bfs_gif_path = os.path.join("Algo Visualiser", "resources", "Breadth-First-Search-Algorithm", "Breadth-First-Search-Algorithm.gif")
         bfs_gif_frames = load_gif(bfs_gif_path)
@@ -84,22 +90,22 @@ def open_help_window():
     dfs_gif_delay = 500
     dfs_gif_timer = 0
 
-    # Remove the white background
-    for frame in bfs_gif_frames:
-        frame.set_colorkey((255, 255, 255))
-
     # Calculate the position to center the GIF below the text
     gif_width, gif_height = bfs_gif_frames[0].get_size()
     gif_x = (200 + screen.get_width() - gif_width) // 2
     gif_y = (screen.get_height() - gif_height) // 2 + 100
 
+    # Main loop for running the help window
     running = True
     while running:
         time_delta = clock.tick(60) / 1000.0
 
+        # Event handling loop
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                pygame.quit()
+                sys.exit()
             elif event.type == pygame.USEREVENT:
                 if event.user_type == pygame_gui.UI_SELECTION_LIST_NEW_SELECTION:
                     # Update the text box when a new algorithm is selected
@@ -115,14 +121,17 @@ def open_help_window():
                     else:
                         algo_textbox.set_text("<p>" + algorithms[selected_algo] + "</p>")
 
+            # Process events using the Pygame GUI manager
             manager.process_events(event)
 
+        # Update the Pygame GUI manager
         manager.update(time_delta)
 
+        # Clear the screen and draw the UI elements
         screen.fill((255, 255, 255))
-
         manager.draw_ui(screen)
 
+        # Display the appropriate GIF animation based on the selected algorithm
         if algo_list.get_single_selection() == "BFS":
             current_time = pygame.time.get_ticks()
             if current_time - bfs_gif_timer > bfs_gif_delay:
@@ -138,8 +147,9 @@ def open_help_window():
 
         pygame.display.update()
 
+    # Quit Pygame when the help window is closed
     pygame.quit()
 
-
+# Run the help window when the script is executed directly
 if __name__ == "__main__":
     open_help_window()

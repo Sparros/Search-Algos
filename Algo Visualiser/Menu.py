@@ -4,8 +4,8 @@ from queue import Queue
 
 from pygame_gui.core import ObjectID
 
-# Define the algorithm list here
-ALGO_LIST = ["A*", "BFS", "DFS", "Dijkstra", "Greedy Best-First", "Bidirectional BFS", "Jump Point Search", "Bellman-Ford"]
+# Define the algorithm list for selection boxes
+ALGO_LIST = ["A*", "BFS", "DFS", "Dijkstra", "Greedy Best-First", "Bidirectional BFS"]
 
 class Menu:
     def __init__(self, width, height):
@@ -19,8 +19,6 @@ class Menu:
         
         button_width = 100
         button_height = 50
-        gap = 10
-        vertical_gap = 50
         
         # Create menu elements: Height order
         self.title_label = pygame_gui.elements.ui_label.UILabel(
@@ -88,7 +86,7 @@ class Menu:
             object_id="#simulate-title"
         )
         self.traffic_checkbox = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((30, 460), (self.width - 80, 30)),
+            relative_rect=pygame.Rect((40, 460), (self.width - 80, 30)),
             text='[ ] Traffic',
             manager=self.manager,
             object_id=ObjectID(class_id='@checkbox_button', 
@@ -104,7 +102,7 @@ class Menu:
                                object_id='#new-maze-button')
         )
         self.regen_label = pygame_gui.elements.ui_label.UILabel(
-            relative_rect=pygame.Rect((10, 500 + button_height), (self.width + 8, 28)),
+            relative_rect=pygame.Rect((0, 495 + button_height), (self.width + 8, 28)),
             text='Maze requires regenerating',
             manager=self.manager,
             object_id=ObjectID(class_id='@regen-text', 
@@ -148,6 +146,7 @@ class Menu:
             col = i % num_columns
             x_pos = (max_width - grid_width) // 2 + col * checkbox_gap_x
             y_pos = 570 + row * checkbox_gap_y
+
             checkbox = pygame_gui.elements.UIButton(
                 relative_rect=pygame.Rect((x_pos, y_pos), (checkbox_gap_x, 30)),
                 text=f"[{'X' if i < 4 else ' '}] {algo}",
@@ -172,6 +171,7 @@ class Menu:
 
         column_names = ["Algorithm", "Time"]
         
+        # Get the results for the selected algorithms
         if results is not None:
             result_times = [None] * len(selected_algorithms)
             for index, res in enumerate(results):
@@ -297,6 +297,7 @@ class Menu:
         surface.fill((29,34,40,255))
         self.manager.draw_ui(surface)
     
+    # called in main loop
     def update_table(self, selected_algorithms, results=None):
         self.create_table(30, 120, selected_algorithms, results)
     

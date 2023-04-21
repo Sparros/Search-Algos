@@ -4,6 +4,7 @@ from queue import PriorityQueue
 from threading import Thread
 from multiprocessing import Process
 from queue import Queue
+import sys
 
 import Node
 import Algos
@@ -51,6 +52,7 @@ top_right_surf = pygame.Surface((GRID_WIDTH, GRID_HEIGHT))
 bottom_left_surf = pygame.Surface((GRID_WIDTH, GRID_HEIGHT))
 bottom_right_surf = pygame.Surface((GRID_WIDTH, GRID_HEIGHT))
 
+# Generate maze from 2D array of nodes
 def generate_maze(grid, start, end, add_traffic, traffic_probability=0.1):
     # Fill the grid with barriers
     for row in grid:
@@ -67,6 +69,7 @@ def generate_maze(grid, start, end, add_traffic, traffic_probability=0.1):
                 neighbours.append((nx, ny, dx, dy))
         return neighbours
 
+    # Recursively "carve paths" between the start and end nodes
     def carve_paths(x, y, visited):
         visited.add((x, y))
         if not grid[x][y].is_start() and not grid[x][y].is_end():
@@ -97,6 +100,7 @@ def set_start_end(grid, start_row, start_col, end_row, end_col):
     #print(f"Set start node: {start}, end node: {end}")
     return start, end
 
+# Given row and width, create a 2D array of nodes
 def create_single_grid(rows, width):
     gap = width // rows
     grid = []
@@ -107,10 +111,12 @@ def create_single_grid(rows, width):
             grid[i].append(node)
     return grid
 
+# Given the number of rows and the width of a grid, creates a 2D list of Node objects representing the grid.
 def create_and_copy_grids(rows, width, traffic):
     global FREE_DRAW_MODE
     base_grid = create_single_grid(rows, width)
 
+    # If free draw mode is enabled, return the base grid to avoid setting start and end nodes
     if not FREE_DRAW_MODE:
         start_node, end_node = set_start_end(base_grid, 1, 1, rows - 2, rows - 2)
         generate_maze(base_grid, start_node, end_node, traffic)
@@ -124,6 +130,7 @@ def create_and_copy_grids(rows, width, traffic):
     #print(f"Grids created - start node: {start_node}, end node: {end_node}")
     return top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node
 
+# iterate through grid and copy the nodes
 def copy_grid(source_grid):
     copied_grid = []
     for i in range(len(source_grid)):
@@ -178,14 +185,18 @@ def get_clicked_pos(pos, rows, width):
 
     return row, col
 
-def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
+def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset, clicked_surface=None):
     start, end = start_end_nodes
     node = None
 
-    if pygame.mouse.get_pressed()[0]:  # LEFT
+    if pygame.mouse.get_pressed()[0]:  # LEFT CLICK
+        print("Left click")
         pos = pygame.mouse.get_pos()
         pos = (pos[0] - x_offset, pos[1] - y_offset)
         row, col = get_clicked_pos(pos, rows, width)
+
+        keys = pygame.key.get_pressed()
+        shift_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
 
         if 0 <= row < rows and 0 <= col < rows:
             node = grid[row][col]
@@ -199,10 +210,17 @@ def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
                 end.make_end()
                 start_end_nodes = (start, end)
 
+            elif node != end and node != start and shift_pressed:
+                node.make_traffic()
+                
             elif node != end and node != start:
                 node.make_barrier()
 
-    elif pygame.mouse.get_pressed()[2]:  # RIGHT
+            if clicked_surface:
+                node.draw(clicked_surface)
+
+    elif pygame.mouse.get_pressed()[2]:  # RIGHT CLICK
+        print("Right click")
         pos = pygame.mouse.get_pos()
         pos = (pos[0] - x_offset, pos[1] - y_offset)
         row, col = get_clicked_pos(pos, rows, width)
@@ -215,29 +233,42 @@ def free_draw(surface, grid, rows, width, start_end_nodes, x_offset, y_offset):
             end = None
             start_end_nodes = (start, end)
 
+        if clicked_surface:
+            node.draw(clicked_surface)
+
     return start_end_nodes, grid
 
 def run_algorithms_sequentially(grids, start_node, end_node, selected_algorithms):
-    #print(f"Sequential - start node: {start_node}, end node: {end_node}")
+    # Create a list to hold the results of the algorithms
     results = []
+    # Loop through each algorithm, grid and surface, running each algorithm sequentially
     for algo, grid, surface in zip(selected_algorithms, grids, [top_left_surf, top_right_surf, bottom_left_surf, bottom_right_surf]):
+        # If the algorithm is not None, run it and append the result to the results list
         if algo is not None:
             result = ALGORITHM_FUNCTIONS[algo](grid, start_node, end_node, (lambda node: node.draw(surface)), update_display)
             results.append(result)
+    # Print the results and return them
     print(results)
     return results
 
 def run_algorithms_parallel(grids, start_node, end_node, selected_algorithms):
     surfaces = [top_left_surf, top_right_surf, bottom_left_surf, bottom_right_surf]
+    # Create a list of threads to hold the running algorithms
     threads = []
+    # Create a list to hold the results of the algorithms
     results = [None] * len(selected_algorithms)
     print(selected_algorithms, surfaces)
+    # Loop through each algorithm, grid and surface, running each algorithm in parallel
     for i, (algo, grid, surface) in enumerate(zip(selected_algorithms, grids, surfaces)):
+        # avoid running the algorithm if it is not selected
         if algo is not None:
+            # Create a function to draw the node on the surface
             draw_function = lambda node, surface=surface: node.draw(surface)
+            # Create a thread for the algorithm
             thread = Thread(target=algo_wrapper, args=(ALGORITHM_FUNCTIONS[algo], grid, start_node, end_node, draw_function, update_display, results, i))
             threads.append(thread)
 
+    # Start all the threads
     for thread in threads:
         thread.start()
 
@@ -248,29 +279,30 @@ def run_algorithms_parallel(grids, start_node, end_node, selected_algorithms):
     print(f"Results: {results}")
     return results
 
-# wrapper to avoid changing all the algorithm functions for getting results with threading
+# A wrapper to avoid changing all the algorithm functions for getting results with threading
 def algo_wrapper(algo_function, grid, start, end, draw_func, update_display, results, index):
     result = algo_function(grid, start, end, draw_func, update_display)
     results[index] = result
 
 def update_grids(surfaces, grids, rows, width, start_end_nodes):
     global FREE_DRAW_MODE
+    # If the free draw mode is on, clear the grids and reset the start and end nodes
     if FREE_DRAW_MODE:
         for grid in grids:
             clear_grid(grid)
-            for surf, g in zip(surfaces, grids):
-                draw(surf, g, rows, width)
-        start_end_nodes = (None, None)  # Add this line
+        start_end_nodes = (None, None)  
         start_node, end_node = start_end_nodes
+    # If the free draw mode is off, set the start and end nodes
     else:
         start_node, end_node = set_start_end(grids[0], 1, 1, ROWS - 2, ROWS - 2)
+    # Draw the grids on the surfaces and return the start and end nodes
     for surf, grid in zip(surfaces, grids):
         draw(surf, grid, rows, width)
     return start_node, end_node
 
 def create_app(selected_algorithms):
     titles = []
-    surfaces = []
+    surfaces = [] 
 
     # Create title surfaces for selected algorithms
     for algo in selected_algorithms:
@@ -308,6 +340,7 @@ def create_app(selected_algorithms):
 
     pygame.display.update()
 
+# Called whenever the dispaly is changed i,e node change from algos running/free draw
 def update_display():
     # Blit the grid surfaces onto the window
     GRID_SCREEN.blit(top_left_surf, (PADDING, PADDING + FONT_SIZE))
@@ -318,11 +351,13 @@ def update_display():
     # Update the display
     pygame.display.flip()
 
+# called by free draw button
 def clear_grid(grid):
     for row in grid:
         for node in row:
             node.reset()
 
+# called by reset button
 def reset_grid(grid):
     for row in grid:
         for node in row:
@@ -330,14 +365,16 @@ def reset_grid(grid):
                 node.reset()
 
 def main():  
-    global FREE_DRAW_MODE
     grid_needs_update = True
     execution_mode = "PARALLEL"
     start_end_nodes = (None, None)
     traffic = False
     global ROWS
     selected_algorithms = ["A*", "DFS", "BFS", "Dijkstra"]
-
+    # for free draw mode
+    global FREE_DRAW_MODE
+    left_button_down = False
+    right_button_down = False
     # initialise grids
     top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid, start_node, end_node = create_and_copy_grids(ROWS, GRID_WIDTH, traffic)
 
@@ -345,23 +382,44 @@ def main():
     grids = [top_left_grid, top_right_grid, bottom_left_grid, bottom_right_grid]
 
     while True:
+        # updates display with correct grid titles, updates menu
         create_app(selected_algorithms)
+        # called on maze change, row change
         if grid_needs_update:
             start_node, end_node = update_grids(surfaces, grids, ROWS, GRID_WIDTH, start_end_nodes)
             grid_needs_update = False
- 
-        if FREE_DRAW_MODE:
-            start_end_nodes, grids[0] = free_draw(top_left_surf, grids[0], ROWS, GRID_WIDTH, start_end_nodes, PADDING + MENU_WIDTH, PADDING + FONT_SIZE)
-            start_node = start_end_nodes[0]
-            end_node = start_end_nodes[1]
-            for grid in grids[1:]:
-                for row, source_row in zip(grid, grids[0]):
-                    for node, source_node in zip(row, source_row):
-                        node.update_from(source_node)
-            update_display()
+
         # Handle events
         for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            # Returns variables from menu changes
             action, traffic, new_rows, updated_algorithms = menu.handle_event(event)
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button
+                    left_button_down = True
+                elif event.button == 3:  # Right mouse button
+                    right_button_down = True
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Left mouse button
+                    left_button_down = False
+                elif event.button == 3:  # Right mouse button
+                    right_button_down = False
+
+            if (left_button_down or right_button_down) and FREE_DRAW_MODE:
+                start_end_nodes, grids[0] = free_draw(top_left_surf, grids[0], ROWS, GRID_WIDTH, start_end_nodes, PADDING + MENU_WIDTH, PADDING + FONT_SIZE, top_left_surf)
+                start_node, end_node = start_end_nodes
+                
+                for i, grid in enumerate(grids[1:], 1):
+                    for row, source_row in zip(grid, grids[0]):
+                        for node, source_node in zip(row, source_row):
+                            if not node.is_same_state(source_node):  # Check if the source node's state is different from the current node
+                                node.update_from(source_node)
+                                node.draw(surfaces[i])
+                update_display()
 
             # Remove unselected algorithms
             for i, algo in enumerate(selected_algorithms):
@@ -396,6 +454,9 @@ def main():
                 menu.update_table(selected_algorithms, results)
 
             elif action == "RESET_EVENT":
+                if FREE_DRAW_MODE:
+                    start_node, end_node = None, None
+                    start_end_nodes = (start_node, end_node)
                 for grid in grids:
                     reset_grid(grid)
                 start_node, end_node = set_start_end(grids[0], 1, 1, ROWS - 2, ROWS - 2)
